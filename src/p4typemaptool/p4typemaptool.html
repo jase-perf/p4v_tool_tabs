@@ -36,7 +36,7 @@
       .view-mode-toggle button {
         padding: 5px 10px;
         border: 1px solid #ccc;
-        /* background: #f5f5f5; */
+        background: #f5f5f5;
         cursor: pointer;
       }
 
@@ -63,7 +63,7 @@
       }
 
       .test-result.match {
-        background: #66d380;
+        background: #d4edda;
         color: #155724;
       }
 
@@ -80,13 +80,14 @@
 
       .typemap-table th,
       .typemap-table td {
-        border: 1px solid;
+        border: 1px solid #ddd;
         padding: 8px;
         text-align: left;
         vertical-align: top;
       }
 
       .typemap-table th {
+        background-color: #f2f2f2;
         font-weight: bold;
       }
 
@@ -113,7 +114,7 @@
       }
 
       .file-type-display:hover {
-        background-color: #6d6262;
+        background-color: #f0f0f0;
       }
 
       .type-label {
@@ -129,11 +130,30 @@
       }
 
       .file-type-editor {
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        z-index: 1000;
         border: 1px solid #ccc;
         background: white;
-        padding: 15px;
+        padding: 20px;
         border-radius: 5px;
-        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+      }
+
+      .editor-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 999;
       }
 
       .modifier-category {
@@ -142,7 +162,7 @@
 
       .modifier-category h4 {
         margin: 0 0 8px 0;
-        color: #7a7a7a;
+        color: #333;
         font-size: 0.9em;
       }
 
@@ -160,6 +180,7 @@
       .result-preview {
         margin-top: 10px;
         padding: 10px;
+        background: #f8f9fa;
         border-radius: 3px;
       }
 
@@ -184,12 +205,13 @@
         padding: 5px 10px;
         margin: 2px;
         border: 1px solid #ccc;
+        background: #f5f5f5;
         cursor: pointer;
         border-radius: 3px;
       }
 
       .btn:hover {
-        background: #813c3c;
+        background: #e5e5e5;
       }
 
       .btn.primary {
@@ -225,13 +247,14 @@
 
       .help-text {
         font-size: 0.9em;
-        color: #7c7c7c;
+        color: #666;
         font-style: italic;
         margin-top: 5px;
       }
 
       .status-bar {
         padding: 10px;
+        background: #f8f9fa;
         border-top: 1px solid #ddd;
         font-size: 0.9em;
       }
@@ -239,7 +262,7 @@
       .loading {
         text-align: center;
         padding: 40px;
-        color: #7e7e7e;
+        color: #666;
       }
     </style>
     <script type="text/javascript" src="p4typemaptool.js"></script>
@@ -328,9 +351,9 @@
             onchange="updateFileTypePreview()"
           >
             <option value="binary">
-              Binary - Non-text file (images, executables, etc.)
+              Binary - Binary file (images, executables, etc.)
             </option>
-            <option value="text">Text - Plain text file</option>
+            <option value="text">Text - Text file</option>
             <option value="symlink">
               Symbolic Link - Unix/Mac symbolic link
             </option>

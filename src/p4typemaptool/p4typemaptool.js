@@ -891,7 +891,10 @@ document.addEventListener("click", function (e) {
       !editor.contains(e.target) &&
       !e.target.matches(".file-type-display")
     ) {
-      cancelFileTypeEdit();
+      // Don't close if clicking on overlay (let overlay onclick handle it)
+      if (!e.target.matches(".editor-overlay")) {
+        return;
+      }
     }
   }
 });
