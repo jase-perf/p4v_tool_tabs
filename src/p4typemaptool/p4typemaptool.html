@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>P4 Typemap Editor</title>
+    <script type="text/javascript">
+      var darktheme = p4vjs.useDarkTheme();
+      if (darktheme) {
+        document.write(
+          '<link rel="stylesheet" type="text/css" href="../darkstyle.css" />'
+        );
+      } else {
+        document.write(
+          '<link rel="stylesheet" type="text/css" href="../style.css" />'
+        );
+      }
+    </script>
+    <style>
+      .typemap-container {
+        padding: 10px;
+      }
+
+      .toolbar {
+        margin-bottom: 20px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+
+      .view-mode-toggle {
+        display: flex;
+        gap: 5px;
+      }
+
+      .view-mode-toggle button {
+        padding: 5px 10px;
+        border: 1px solid #ccc;
+        /* background: #f5f5f5; */
+        cursor: pointer;
+      }
+
+      .view-mode-toggle button.active {
+        background: #007acc;
+        color: white;
+      }
+
+      .test-section {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+      }
+
+      .test-input {
+        width: 300px;
+        padding: 5px;
+      }
+
+      .test-result {
+        font-weight: bold;
+        padding: 5px 10px;
+        border-radius: 3px;
+      }
+
+      .test-result.match {
+        background: #66d380;
+        color: #155724;
+      }
+
+      .test-result.no-match {
+        background: #f8d7da;
+        color: #721c24;
+      }
+
+      .typemap-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+      }
+
+      .typemap-table th,
+      .typemap-table td {
+        border: 1px solid;
+        padding: 8px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      .typemap-table th {
+        font-weight: bold;
+      }
+
+      .drag-handle {
+        cursor: move;
+        text-align: center;
+        width: 30px;
+        user-select: none;
+      }
+
+      .priority-cell {
+        width: 60px;
+        text-align: center;
+      }
+
+      .file-type-cell {
+        min-width: 200px;
+      }
+
+      .file-type-display {
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 3px;
+      }
+
+      .file-type-display:hover {
+        background-color: #6d6262;
+      }
+
+      .type-label {
+        display: block;
+        font-weight: bold;
+      }
+
+      .type-code {
+        display: block;
+        font-size: 0.9em;
+        color: #666;
+        font-family: monospace;
+      }
+
+      .file-type-editor {
+        border: 1px solid #ccc;
+        background: white;
+        padding: 15px;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+
+      .modifier-category {
+        margin-bottom: 15px;
+      }
+
+      .modifier-category h4 {
+        margin: 0 0 8px 0;
+        color: #7a7a7a;
+        font-size: 0.9em;
+      }
+
+      .modifier-category label {
+        display: block;
+        margin-bottom: 5px;
+        font-size: 0.9em;
+        cursor: pointer;
+      }
+
+      .modifier-category input[type="checkbox"] {
+        margin-right: 8px;
+      }
+
+      .result-preview {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 3px;
+      }
+
+      .pattern-input {
+        width: 100%;
+        padding: 5px;
+        border: 1px solid #ddd;
+      }
+
+      .comment-input {
+        width: 100%;
+        padding: 5px;
+        border: 1px solid #ddd;
+      }
+
+      .actions-cell {
+        width: 100px;
+        text-align: center;
+      }
+
+      .btn {
+        padding: 5px 10px;
+        margin: 2px;
+        border: 1px solid #ccc;
+        cursor: pointer;
+        border-radius: 3px;
+      }
+
+      .btn:hover {
+        background: #813c3c;
+      }
+
+      .btn.primary {
+        background: #007acc;
+        color: white;
+        border-color: #0056b3;
+      }
+
+      .btn.danger {
+        background: #dc3545;
+        color: white;
+        border-color: #c82333;
+      }
+
+      .conflict-warning {
+        background: #fff3cd;
+        border: 1px solid #ffeaa7;
+        padding: 5px;
+        border-radius: 3px;
+        font-size: 0.9em;
+        color: #856404;
+      }
+
+      .validation-warning {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        padding: 5px;
+        border-radius: 3px;
+        font-size: 0.9em;
+        color: #721c24;
+        margin-top: 5px;
+      }
+
+      .help-text {
+        font-size: 0.9em;
+        color: #7c7c7c;
+        font-style: italic;
+        margin-top: 5px;
+      }
+
+      .status-bar {
+        padding: 10px;
+        border-top: 1px solid #ddd;
+        font-size: 0.9em;
+      }
+
+      .loading {
+        text-align: center;
+        padding: 40px;
+        color: #7e7e7e;
+      }
+    </style>
+    <script type="text/javascript" src="p4typemaptool.js"></script>
+  </head>
+  <body onload="initializeTypemapEditor()">
+    <div class="typemap-container">
+      <header>
+        <h2>P4 Typemap Editor</h2>
+        <p>
+          Configure file type mappings for your Perforce server. Rules are
+          evaluated in order - later rules override earlier ones.
+        </p>
+      </header>
+
+      <div class="toolbar">
+        <div class="view-mode-toggle">
+          <button
+            id="browseMode"
+            class="active"
+            onclick="setViewMode('browse')"
+          >
+            Browse Mode
+          </button>
+          <button id="orderMode" onclick="setViewMode('order')">
+            Execution Order
+          </button>
+        </div>
+
+        <label for="sortBy">Sort by:</label>
+        <select id="sortBy" onchange="sortTable()">
+          <option value="order">Execution Order</option>
+          <option value="pattern">Depot Path</option>
+          <option value="type">File Type</option>
+        </select>
+
+        <div class="test-section">
+          <label for="testPath">Test Path:</label>
+          <input
+            type="text"
+            id="testPath"
+            class="test-input"
+            placeholder="//depot/example/test.pdf"
+            onchange="testPath()"
+          />
+          <button onclick="testPath()" class="btn">Test</button>
+          <span id="testResult" class="test-result"></span>
+        </div>
+
+        <button onclick="addNewRule()" class="btn primary">Add Rule</button>
+        <button onclick="saveTypemap()" class="btn primary">Save</button>
+        <button onclick="loadTypemap()" class="btn">Reload</button>
+      </div>
+
+      <div id="loadingIndicator" class="loading">Loading typemap...</div>
+
+      <table id="typemapTable" class="typemap-table" style="display: none">
+        <thead>
+          <tr>
+            <th class="drag-handle">⣿⣿</th>
+            <th>Priority</th>
+            <th>File Type</th>
+            <th>Depot Path Pattern</th>
+            <th>Comment</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="typemapTableBody">
+          <!-- Rules will be populated here -->
+        </tbody>
+      </table>
+
+      <div class="status-bar">
+        <span id="statusMessage">Ready</span>
+        <span id="ruleCount" style="float: right"></span>
+      </div>
+    </div>
+
+    <!-- Hidden template for file type editor -->
+    <div id="fileTypeEditorTemplate" style="display: none">
+      <div class="file-type-editor">
+        <div style="margin-bottom: 15px">
+          <label for="baseFileType">Base File Type:</label>
+          <select
+            id="baseFileType"
+            style="width: 100%; padding: 5px"
+            onchange="updateFileTypePreview()"
+          >
+            <option value="binary">
+              Binary - Non-text file (images, executables, etc.)
+            </option>
+            <option value="text">Text - Plain text file</option>
+            <option value="symlink">
+              Symbolic Link - Unix/Mac symbolic link
+            </option>
+            <option value="unicode">Unicode - Unicode text file</option>
+            <option value="utf8">UTF-8 - Unicode file with BOM</option>
+            <option value="utf16">UTF-16 - Unicode file</option>
+          </select>
+          <div class="help-text" id="fileTypeHelp"></div>
+        </div>
+
+        <div class="modifier-category">
+          <h4>Permissions & Access</h4>
+          <label
+            ><input
+              type="checkbox"
+              value="w"
+              onchange="updateFileTypePreview()"
+            />
+            Always Writable (+w) - File is always writable on client</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              value="x"
+              onchange="updateFileTypePreview()"
+            />
+            Executable (+x) - Execute bit set on client</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              value="l"
+              onchange="updateFileTypePreview()"
+            />
+            Exclusive Lock (+l) - Only one user can edit at a time</label
+          >
+        </div>
+
+        <div class="modifier-category">
+          <h4>Keyword Expansion</h4>
+          <label
+            ><input
+              type="checkbox"
+              value="k"
+              onchange="updateFileTypePreview()"
+            />
+            RCS Keywords (+k) - Expands $Id$, $Date$, $Author$, etc.</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              value="ko"
+              onchange="updateFileTypePreview()"
+            />
+            Limited Keywords (+ko) - Only expands $Id$ and $Header$</label
+          >
+        </div>
+
+        <div class="modifier-category">
+          <h4>Storage Options</h4>
+          <label
+            ><input
+              type="checkbox"
+              value="C"
+              onchange="updateFileTypePreview()"
+            />
+            Compressed Storage (+C) - Full compressed version per
+            revision</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              value="D"
+              onchange="updateFileTypePreview()"
+            />
+            Delta Storage (+D) - Store deltas in RCS format</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              value="F"
+              onchange="updateFileTypePreview()"
+            />
+            Full Uncompressed (+F) - Full file per revision, uncompressed</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              value="S"
+              onchange="updateFileTypePreview()"
+            />
+            Head Only (+S) - Only store latest revision</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              value="S10"
+              onchange="updateFileTypePreview()"
+            />
+            Keep 10 Revisions (+S10) - Store most recent 10 revisions</label
+          >
+        </div>
+
+        <div class="modifier-category">
+          <h4>Special Options</h4>
+          <label
+            ><input
+              type="checkbox"
+              value="m"
+              onchange="updateFileTypePreview()"
+            />
+            Preserve Modtime (+m) - Keep original file modification time</label
+          >
+          <label
+            ><input
+              type="checkbox"
+              value="X"
+              onchange="updateFileTypePreview()"
+            />
+            Archive Trigger (+X) - Requires archive trigger to access</label
+          >
+        </div>
+
+        <div class="result-preview">
+          <strong>Resulting File Type:</strong>
+          <code id="resultingType">binary</code>
+        </div>
+
+        <div id="validationWarnings"></div>
+
+        <div style="margin-top: 15px; text-align: right">
+          <button onclick="cancelFileTypeEdit()" class="btn">Cancel</button>
+          <button onclick="applyFileTypeEdit()" class="btn primary">
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
