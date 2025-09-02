@@ -96,7 +96,7 @@ async function loadTypemap() {
     if (result.error) {
       throw new Error(result.error);
     }
-    console.log(result);
+
     // Parse the typemap data
     typemapRules = parseTypemapData(result.data);
     renderTable();
@@ -115,10 +115,24 @@ function parseTypemapData(data) {
   const rules = [];
   let order = 1;
 
-  if (data && data.length > 0 && data[0].TypeMap) {
-    const typemapLines = data[0].TypeMap.split("\n");
+  if (data && data.length > 0) {
+    const typemapData = data[0];
 
-    for (const line of typemapLines) {
+    // Extract all TypeMapN properties and sort them numerically
+    const typemapEntries = [];
+    for (const key in typemapData) {
+      if (key.startsWith("TypeMap")) {
+        const index = parseInt(key.replace("TypeMap", ""));
+        typemapEntries.push({ index, value: typemapData[key] });
+      }
+    }
+
+    // Sort by index to maintain order
+    typemapEntries.sort((a, b) => a.index - b.index);
+
+    // Parse each entry
+    for (const entry of typemapEntries) {
+      const line = entry.value;
       const trimmedLine = line.trim();
 
       // Skip empty lines and pure comment lines
