@@ -1,0 +1,153 @@
+# Perforce File Type Mapping Specifications.
+#
+#  TypeMap:    a list of filetype mappings; one per line.
+#        Each line has two elements:
+#
+#          Filetype: The filetype to use on 'p4 add'.
+#
+#          Path:     File pattern which will use this filetype.
+#
+# See 'p4 help typemap' for more information.
+
+TypeMap:
+    text+l      //....md5anim     ## Unity3D files that should be locked
+    text+l      //....md5mesh     ## Unity3D files that should be locked
+    text+l      //....meta        ## Unity3D files that should be locked
+
+    text+w      //....config      ## Auto-updated files - reconcile offline work carefully
+    text+w      //....DotSettings  ## Auto-updated files - reconcile offline work carefully
+    text+w      //....ini         ## Auto-updated files - reconcile offline work carefully
+    text+w      //....log         ## Auto-updated files - reconcile offline work carefully
+    text+w      //....modules     ## Auto-updated files - reconcile offline work carefully
+    text+w      //....pdm         ## Auto-updated files - reconcile offline work carefully
+    text+w      //....target      ## Auto-updated files - reconcile offline work carefully
+    text+w      //....uatbuildrecord ## Auto-updated files - reconcile offline work carefully
+    text+w      //....uproject    ## Auto-updated files - reconcile offline work carefully
+    text+w      //....version     ## Auto-updated files - reconcile offline work carefully
+
+    binary+Fl   //....avi         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....bz2         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....gif         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....gz          ## Already compressed - store uncompressed and lock
+    binary+Fl   //....jar         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....jpeg        ## Already compressed - store uncompressed and lock
+    binary+Fl   //....jpg         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....mov         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....mpg         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....rar         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....tif         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....tiff        ## Already compressed - store uncompressed and lock
+    binary+Fl   //....zip         ## Already compressed - store uncompressed and lock
+
+    binary+Fl   //....a           ## Store uncompressed for Delta Transfer
+    binary+Fl   //....aac         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....aar         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....aas         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ae          ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ai          ## Store uncompressed for Delta Transfer
+    binary+Fl   //....aiff        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....anim        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....apk         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....asset       ## Store uncompressed for Delta Transfer
+    binary+Fl   //....bik         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....bin         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....blend       ## Store uncompressed for Delta Transfer
+    binary+Fl   //....bmp         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....bnk         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....btr         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....celtx       ## Store uncompressed for Delta Transfer
+    binary+Fl   //....cfm         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....class       ## Store uncompressed for Delta Transfer
+    binary+Fl   //....clip        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....controller  ## Store uncompressed for Delta Transfer
+    binary+Fl   //....cubemap     ## Store uncompressed for Delta Transfer
+    binary+Fl   //....dae         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....data        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....dds         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....demo        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....doc         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....docx        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....dot         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ear         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....fbx         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....flac        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....fnt         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ibl         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ico         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ip          ## Store uncompressed for Delta Transfer
+    binary+Fl   //....light       ## Store uncompressed for Delta Transfer
+    binary+Fl   //....lighting    ## Store uncompressed for Delta Transfer
+    binary+Fl   //....lwo         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....m4a         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ma          ## Store uncompressed for Delta Transfer
+    binary+Fl   //....mask        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....mat         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....mb          ## Store uncompressed for Delta Transfer
+    binary+Fl   //....mp3         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....mp4         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....navmesh     ## Store uncompressed for Delta Transfer
+    binary+Fl   //....obj         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....odg         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....odp         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ods         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....odt         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ogg         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....otf         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....otg         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ots         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ott         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....overrideController ## Store uncompressed for Delta Transfer
+    binary+Fl   //....pac         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....pdf         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....physicMaterial ## Store uncompressed for Delta Transfer
+    binary+Fl   //....png         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ppt         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....pptx        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....prefab      ## Store uncompressed for Delta Transfer
+    binary+Fl   //....prefab.unity ## Store uncompressed for Delta Transfer
+    binary+Fl   //....psb         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....psd         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....raw         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....renderTexture ## Store uncompressed for Delta Transfer
+    binary+Fl   //....res         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....response    ## Store uncompressed for Delta Transfer
+    binary+Fl   //....roq         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....rpt         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....shadow      ## Store uncompressed for Delta Transfer
+    binary+Fl   //....skp         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....so          ## Store uncompressed for Delta Transfer
+    binary+Fl   //....sxw         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....tar         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....terrain     ## Store uncompressed for Delta Transfer
+    binary+Fl   //....tga         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....tres        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....ttf         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....u           ## Store uncompressed for Delta Transfer
+    binary+Fl   //....uasset      ## Store uncompressed for Delta Transfer
+    binary+Fl   //....udk         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....umap        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....unity       ## Store uncompressed for Delta Transfer
+    binary+Fl   //....unitypackage ## Store uncompressed for Delta Transfer
+    binary+Fl   //....upk         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....war         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....wav         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....webm        ## Store uncompressed for Delta Transfer
+    binary+Fl   //....wma         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....wmv         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....xls         ## Store uncompressed for Delta Transfer
+    binary+Fl   //....xlsx        ## Store uncompressed for Delta Transfer
+
+    binary+Fw   //....app         ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....dll         ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....dylib       ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....exe         ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....exp         ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....ipa         ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....lib         ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....pdb         ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....rc          ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....stub        ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....ubulk       ## Build output - stays writable, Delta Transfer enabled
+    binary+Fw   //....uexp        ## Build output - stays writable, Delta Transfer enabled
+
+    binary+FwS2 //..._BuildData.uasset ## Large regenerable files - keep 2 versions, Delta Transfer enabled

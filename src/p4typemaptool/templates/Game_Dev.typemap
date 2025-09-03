@@ -1,0 +1,153 @@
+# Perforce File Type Mapping Specifications.
+#
+#  TypeMap:    a list of filetype mappings; one per line.
+#        Each line has two elements:
+#
+#          Filetype: The filetype to use on 'p4 add'.
+#
+#          Path:     File pattern which will use this filetype.
+#
+# See 'p4 help typemap' for more information.
+
+TypeMap:
+    text+l      //....md5anim     ## Unity3D files that should be locked
+    text+l      //....md5mesh     ## Unity3D files that should be locked
+    text+l      //....meta        ## Unity3D files that should be locked
+
+    text+w      //....config      ## Auto-updated files - reconcile offline work carefully
+    text+w      //....DotSettings  ## Auto-updated files - reconcile offline work carefully
+    text+w      //....ini         ## Auto-updated files - reconcile offline work carefully
+    text+w      //....log         ## Auto-updated files - reconcile offline work carefully
+    text+w      //....modules     ## Auto-updated files - reconcile offline work carefully
+    text+w      //....pdm         ## Auto-updated files - reconcile offline work carefully
+    text+w      //....target      ## Auto-updated files - reconcile offline work carefully
+    text+w      //....uatbuildrecord ## Auto-updated files - reconcile offline work carefully
+    text+w      //....uproject    ## Auto-updated files - reconcile offline work carefully
+    text+w      //....version     ## Auto-updated files - reconcile offline work carefully
+
+    binary+Fl   //....avi         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....bz2         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....gif         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....gz          ## Already compressed - store uncompressed and lock
+    binary+Fl   //....jar         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....jpeg        ## Already compressed - store uncompressed and lock
+    binary+Fl   //....jpg         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....mov         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....mpg         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....rar         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....tif         ## Already compressed - store uncompressed and lock
+    binary+Fl   //....tiff        ## Already compressed - store uncompressed and lock
+    binary+Fl   //....zip         ## Already compressed - store uncompressed and lock
+
+    binary+l    //....a
+    binary+l    //....aac
+    binary+l    //....aar
+    binary+l    //....aas
+    binary+l    //....ae
+    binary+l    //....ai
+    binary+l    //....aiff
+    binary+l    //....anim
+    binary+l    //....apk
+    binary+l    //....asset
+    binary+l    //....bik
+    binary+l    //....bin
+    binary+l    //....blend
+    binary+l    //....bmp
+    binary+l    //....bnk
+    binary+l    //....btr
+    binary+l    //....celtx
+    binary+l    //....cfm
+    binary+l    //....class
+    binary+l    //....clip
+    binary+l    //....controller
+    binary+l    //....cubemap
+    binary+l    //....dae
+    binary+l    //....data
+    binary+l    //....dds
+    binary+l    //....demo
+    binary+l    //....doc
+    binary+l    //....docx
+    binary+l    //....dot
+    binary+l    //....ear
+    binary+l    //....fbx
+    binary+l    //....flac
+    binary+l    //....fnt
+    binary+l    //....ibl
+    binary+l    //....ico
+    binary+l    //....ip
+    binary+l    //....light
+    binary+l    //....lighting
+    binary+l    //....lwo
+    binary+l    //....m4a
+    binary+l    //....ma
+    binary+l    //....mask
+    binary+l    //....mat
+    binary+l    //....mb
+    binary+l    //....mp3
+    binary+l    //....mp4
+    binary+l    //....navmesh
+    binary+l    //....obj
+    binary+l    //....odg
+    binary+l    //....odp
+    binary+l    //....ods
+    binary+l    //....odt
+    binary+l    //....ogg
+    binary+l    //....otf
+    binary+l    //....otg
+    binary+l    //....ots
+    binary+l    //....ott
+    binary+l    //....overrideController
+    binary+l    //....pac
+    binary+l    //....pdf
+    binary+l    //....physicMaterial
+    binary+l    //....png
+    binary+l    //....ppt
+    binary+l    //....pptx
+    binary+l    //....prefab
+    binary+l    //....prefab.unity
+    binary+l    //....psb
+    binary+l    //....psd
+    binary+l    //....raw
+    binary+l    //....renderTexture
+    binary+l    //....res
+    binary+l    //....response
+    binary+l    //....roq
+    binary+l    //....rpt
+    binary+l    //....shadow
+    binary+l    //....skp
+    binary+l    //....so
+    binary+l    //....sxw
+    binary+l    //....tar
+    binary+l    //....terrain
+    binary+l    //....tga
+    binary+l    //....tres
+    binary+l    //....ttf
+    binary+l    //....u
+    binary+l    //....uasset
+    binary+l    //....udk
+    binary+l    //....umap
+    binary+l    //....unity
+    binary+l    //....unitypackage
+    binary+l    //....upk
+    binary+l    //....war
+    binary+l    //....wav
+    binary+l    //....webm
+    binary+l    //....wma
+    binary+l    //....wmv
+    binary+l    //....xls
+    binary+l    //....xlsx
+
+    binary+w    //....app         ## Build output - stays writable, reconcile carefully
+    binary+w    //....dll         ## Build output - stays writable, reconcile carefully
+    binary+w    //....dylib       ## Build output - stays writable, reconcile carefully
+    binary+w    //....exe         ## Build output - stays writable, reconcile carefully
+    binary+w    //....exp         ## Build output - stays writable, reconcile carefully
+    binary+w    //....ipa         ## Build output - stays writable, reconcile carefully
+    binary+w    //....lib         ## Build output - stays writable, reconcile carefully
+    binary+w    //....pdb         ## Build output - stays writable, reconcile carefully
+    binary+w    //....rc          ## Build output - stays writable, reconcile carefully
+    binary+w    //....stub        ## Build output - stays writable, reconcile carefully
+    binary+w    //....ubulk       ## Build output - stays writable, reconcile carefully
+    binary+w    //....uexp        ## Build output - stays writable, reconcile carefully
+
+    binary+wS2  //..._BuildData.uasset ## Large regenerable files - keep only 2 versions
