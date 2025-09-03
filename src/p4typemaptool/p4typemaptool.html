@@ -119,9 +119,9 @@
 
       .execution-order-controls {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: center;
-        gap: 2px;
+        gap: 5px;
       }
 
       .order-button {
@@ -216,8 +216,11 @@
 
       .pattern-input,
       .comment-input {
-        width: 100%;
+        width: calc(100% - 20px);
         resize: none;
+        padding: 5px;
+        margin: 0;
+        box-sizing: border-box;
       }
 
       .actions-cell {
@@ -293,39 +296,6 @@
       </header>
 
       <div class="toolbar">
-        <div class="view-mode-toggle">
-          <button
-            id="browseMode"
-            class="active"
-            onclick="setViewMode('browse')"
-          >
-            Browse Mode
-          </button>
-          <button id="orderMode" onclick="setViewMode('order')">
-            Execution Order
-          </button>
-        </div>
-
-        <label for="sortBy">Sort by:</label>
-        <select id="sortBy" onchange="sortTable()">
-          <option value="order">Execution Order</option>
-          <option value="pattern">Depot Path</option>
-          <option value="type">File Type</option>
-        </select>
-
-        <div class="test-section">
-          <label for="testPath">Test Path:</label>
-          <input
-            type="text"
-            id="testPath"
-            class="test-input"
-            placeholder="//depot/example/test.pdf"
-            onchange="testPath()"
-          />
-          <button onclick="testPath()" class="btn">Test</button>
-          <span id="testResult" class="test-result"></span>
-        </div>
-
         <button onclick="addNewRule()" class="btn primary">Add Rule</button>
         <button onclick="saveTypemap()" class="btn primary">Save</button>
         <button onclick="loadTypemap()" class="btn">Reload</button>
@@ -336,8 +306,8 @@
       <table id="typemapTable" class="typemap-table" style="display: none">
         <thead>
           <tr>
-            <th class="priority-cell">
-              Execution Order
+            <th class="priority-cell sortable" onclick="sortByColumn('order')">
+              Order
               <div
                 class="column-resizer"
                 onmousedown="startColumnResize(event, 0)"

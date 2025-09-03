@@ -2,7 +2,6 @@
 
 // Global state
 let typemapRules = [];
-let currentViewMode = "browse";
 let currentSortBy = "order";
 let currentSortDirection = "asc";
 let editingRow = null;
@@ -212,10 +211,11 @@ function createTableRow(rule, displayIndex) {
     row.classList.add("has-conflict");
   }
 
-  // Check if this is the first or last rule for button states
-  const ruleIndex = typemapRules.findIndex((r) => r.id === rule.id);
-  const isFirst = ruleIndex === 0;
-  const isLast = ruleIndex === typemapRules.length - 1;
+  // Check if this is the first or last rule for button states (based on actual order, not display order)
+  const sortedByOrder = [...typemapRules].sort((a, b) => a.order - b.order);
+  const orderIndex = sortedByOrder.findIndex((r) => r.id === rule.id);
+  const isFirst = orderIndex === 0;
+  const isLast = orderIndex === sortedByOrder.length - 1;
 
   row.innerHTML = `
         <td class="priority-cell">
@@ -232,13 +232,6 @@ function createTableRow(rule, displayIndex) {
     isLast ? "disabled" : ""
   }>↓</button>
             </div>
-            ${
-              currentViewMode === "browse" && currentSortBy !== "order"
-                ? `<br><small style="opacity: 0.6;">(Display: ${
-                    displayIndex + 1
-                  })</small>`
-                : ""
-            }
         </td>
         <td class="file-type-cell">
             <div class="file-type-display" onclick="editFileType('${rule.id}')">
@@ -269,9 +262,6 @@ function createTableRow(rule, displayIndex) {
                    onchange="updateRuleComment('${rule.id}', this.value)">
         </td>
         <td class="actions-cell">
-            <button onclick="editFileType('${
-              rule.id
-            }')" class="btn" title="Edit File Type">✏️</button>
             <button onclick="deleteRule('${
               rule.id
             }')" class="btn danger" title="Delete Rule">🗑️</button>
@@ -305,29 +295,6 @@ function escapeHtml(text) {
   const div = document.createElement("div");
   div.textContent = text;
   return div.innerHTML;
-}
-
-// Set view mode
-function setViewMode(mode) {
-  currentViewMode = mode;
-
-  // Update button states
-  document
-    .getElementById("browseMode")
-    .classList.toggle("active", mode === "browse");
-  document
-    .getElementById("orderMode")
-    .classList.toggle("active", mode === "order");
-
-  // Re-render table
-  renderTable();
-}
-
-// Sort table
-function sortTable() {
-  const sortSelect = document.getElementById("sortBy");
-  currentSortBy = sortSelect.value;
-  renderTable();
 }
 
 // Update rule pattern
@@ -405,28 +372,38 @@ function deleteRule(ruleId) {
 
 // Move rule up
 function moveRuleUp(ruleId) {
-  const ruleIndex = typemapRules.findIndex((r) => r.id === ruleId);
-  if (ruleIndex > 0) {
-    // Swap with previous rule
-    [typemapRules[ruleIndex - 1], typemapRules[ruleIndex]] = [
-      typemapRules[ruleIndex],
-      typemapRules[ruleIndex - 1],
-    ];
-    reorderRules();
+  const currentRule = typemapRules.find((r) => r.id === ruleId);
+  if (!currentRule) return;
+
+  // Find the rule with the next lower order value
+  const previousRule = typemapRules.find(
+    (r) => r.order === currentRule.order - 1
+  );
+
+  if (previousRule) {
+    // Swap their order values
+    const tempOrder = currentRule.order;
+    currentRule.order = previousRule.order;
+    previousRule.order = tempOrder;
+
     renderTable();
   }
 }
 
 // Move rule down
 function moveRuleDown(ruleId) {
-  const ruleIndex = typemapRules.findIndex((r) => r.id === ruleId);
-  if (ruleIndex < typemapRules.length - 1) {
-    // Swap with next rule
-    [typemapRules[ruleIndex], typemapRules[ruleIndex + 1]] = [
-      typemapRules[ruleIndex + 1],
-      typemapRules[ruleIndex],
-    ];
-    reorderRules();
+  const currentRule = typemapRules.find((r) => r.id === ruleId);
+  if (!currentRule) return;
+
+  // Find the rule with the next higher order value
+  const nextRule = typemapRules.find((r) => r.order === currentRule.order + 1);
+
+  if (nextRule) {
+    // Swap their order values
+    const tempOrder = currentRule.order;
+    currentRule.order = nextRule.order;
+    nextRule.order = tempOrder;
+
     renderTable();
   }
 }
@@ -592,60 +569,6 @@ function cancelFileTypeEdit() {
     }
 
     editingRow = null;
-  }
-}
-
-// Test a path against the current typemap
-function testPath() {
-  const pathInput = document.getElementById("testPath");
-  const resultSpan = document.getElementById("testResult");
-  const testPath = pathInput.value.trim();
-
-  if (!testPath) {
-    resultSpan.textContent = "";
-    resultSpan.className = "test-result";
-    return;
-  }
-
-  // Find the last matching rule (since later rules override earlier ones)
-  let matchingRule = null;
-
-  for (const rule of typemapRules) {
-    if (pathMatchesPattern(testPath, rule.pattern)) {
-      matchingRule = rule;
-    }
-  }
-
-  if (matchingRule) {
-    resultSpan.textContent = `Matches: ${matchingRule.filetype} (Rule ${matchingRule.order})`;
-    resultSpan.className = "test-result match";
-  } else {
-    resultSpan.textContent = "No match - will use Perforce auto-detection";
-    resultSpan.className = "test-result no-match";
-  }
-}
-
-// Check if a path matches a pattern
-function pathMatchesPattern(path, pattern) {
-  // Convert Perforce pattern to regex
-  // This is a simplified implementation - real P4 pattern matching is more complex
-  let regexPattern = pattern
-    .replace(/\.\.\.\./g, ".*") // Four dots: match anything including extension
-    .replace(/\.\.\./g, "[^/]*") // Three dots: match anything in this directory level
-    .replace(/\*/g, "[^/]*") // Single asterisk: match anything except directory separator
-    .replace(/\?/g, ".") // Question mark: match any single character
-    .replace(/\+/g, "\\+") // Escape plus signs
-    .replace(/\(/g, "\\(") // Escape parentheses
-    .replace(/\)/g, "\\)")
-    .replace(/\[/g, "\\[") // Escape brackets
-    .replace(/\]/g, "\\]");
-
-  try {
-    const regex = new RegExp("^" + regexPattern + ",i");
-    return regex.test(path);
-  } catch (e) {
-    console.warn("Invalid pattern:", pattern, e);
-    return false;
   }
 }
 
@@ -827,6 +750,7 @@ function updateSortHeaders() {
 
   // Add indicator to current sort column
   const columnMap = {
+    order: 0,
     type: 1,
     pattern: 2,
     comment: 3,
@@ -847,30 +771,28 @@ function updateSortHeaders() {
 function getSortedRules() {
   let sortedRules = [...typemapRules];
 
-  if (currentViewMode === "browse" && currentSortBy !== "order") {
-    sortedRules.sort((a, b) => {
-      let comparison = 0;
+  sortedRules.sort((a, b) => {
+    let comparison = 0;
 
-      switch (currentSortBy) {
-        case "pattern":
-          comparison = a.pattern.localeCompare(b.pattern);
-          break;
-        case "type":
-          comparison = a.filetype.localeCompare(b.filetype);
-          break;
-        case "comment":
-          comparison = a.comment.localeCompare(b.comment);
-          break;
-        default:
-          comparison = a.order - b.order;
-      }
+    switch (currentSortBy) {
+      case "order":
+        comparison = a.order - b.order;
+        break;
+      case "pattern":
+        comparison = a.pattern.localeCompare(b.pattern);
+        break;
+      case "type":
+        comparison = a.filetype.localeCompare(b.filetype);
+        break;
+      case "comment":
+        comparison = a.comment.localeCompare(b.comment);
+        break;
+      default:
+        comparison = a.order - b.order;
+    }
 
-      return currentSortDirection === "desc" ? -comparison : comparison;
-    });
-  } else {
-    // Always sort by execution order for order mode
-    sortedRules.sort((a, b) => a.order - b.order);
-  }
+    return currentSortDirection === "desc" ? -comparison : comparison;
+  });
 
   return sortedRules;
 }
@@ -933,18 +855,6 @@ function initializeTheme() {
     document.body.classList.add("dark-theme");
   }
 }
-
-// Handle Enter key in test path input
-document.addEventListener("DOMContentLoaded", function () {
-  const testPathInput = document.getElementById("testPath");
-  if (testPathInput) {
-    testPathInput.addEventListener("keypress", function (e) {
-      if (e.key === "Enter") {
-        testPath();
-      }
-    });
-  }
-});
 
 // Close file type editor when clicking outside
 document.addEventListener("click", function (e) {
