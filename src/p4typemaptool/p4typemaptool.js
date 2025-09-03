@@ -16,11 +16,11 @@ let startWidth = 0;
 // File type definitions
 const fileTypes = {
   binary: {
-    label: "Binary - Binary file",
+    label: "Binary - Binary",
     description: "Synced as binary files, stored compressed",
   },
   text: {
-    label: "Text - Plain text file",
+    label: "Text - Plain text",
     description: "Line-ending translations performed automatically",
   },
   symlink: {
@@ -28,7 +28,7 @@ const fileTypes = {
     description: "Treated as symbolic links on supported platforms",
   },
   unicode: {
-    label: "Unicode - Unicode text file",
+    label: "Unicode - Unicode text",
     description: "Translated to local character set (P4CHARSET)",
   },
   utf8: {
@@ -43,41 +43,57 @@ const fileTypes = {
 
 const fileModifiers = {
   w: {
+    emoji: "✏️",
     label: "Always Writable",
     description: "File is always writable on client",
   },
-  x: { label: "Executable", description: "Execute bit set on client" },
+  x: {
+    emoji: "⚡",
+    label: "Executable",
+    description: "Execute bit set on client",
+  },
   l: {
+    emoji: "🔒",
     label: "Exclusive Lock",
     description: "Only one user can edit at a time",
   },
   k: {
+    emoji: "🏷️",
     label: "RCS Keywords",
     description: "Expands $Id$, $Date$, $Author$, etc.",
   },
   ko: {
+    emoji: "🔖",
     label: "Limited Keywords",
     description: "Only expands $Id$ and $Header$",
   },
   C: {
+    emoji: "🗜️",
     label: "Store Compressed",
     description: "Full compressed version per revision",
   },
-  D: { label: "RCS Storage", description: "Store deltas in RCS format" },
+  D: {
+    emoji: "📚",
+    label: "RCS Storage",
+    description: "Store deltas in RCS format",
+  },
   F: {
+    emoji: "🗄️",
     label: "Store Uncompressed",
     description: "Full file per revision, uncompressed",
   },
-  S: { label: "Head Only", description: "Only store latest revision" },
-  S10: {
-    label: "Keep 10 Revisions",
-    description: "Store most recent 10 revisions",
+  S: {
+    emoji: "1️⃣",
+    label: "Head Only",
+    description: "Only store latest revision",
   },
   m: {
+    emoji: "🕐",
     label: "Preserve Modtime",
     description: "Keep original file modification time",
   },
   X: {
+    emoji: "🎯",
     label: "Archive Trigger",
     description: "Requires archive trigger to access",
   },
@@ -296,7 +312,7 @@ function createTableRow(rule, displayIndex) {
   return row;
 }
 
-// Get human-readable description of file type
+// Get human-readable description of file type with emojis and tooltips
 function getFileTypeDescription(filetype) {
   const [baseType, modifierString] = filetype.split("+");
 
@@ -329,22 +345,43 @@ function getFileTypeDescription(filetype) {
     : baseType;
 
   if (modifiers.length > 0) {
-    const modifierDescriptions = modifiers
+    const modifierEmojis = modifiers
       .map((mod) => {
         if (fileModifiers[mod]) {
-          return fileModifiers[mod].label;
+          return `<span class="modifier-emoji" title="${fileModifiers[mod].label}: ${fileModifiers[mod].description}">${fileModifiers[mod].emoji}</span>`;
         } else if (mod === "S") {
-          return "Head Only";
+          return `<span class="modifier-emoji" title="Head Only: Only store latest revision">${fileModifiers.S.emoji}</span>`;
         } else if (mod.startsWith("S") && /\d/.test(mod.substring(1))) {
-          const revisionCount = mod.substring(1);
-          return `Latest ${revisionCount} Only`;
+          const revisionCount = parseInt(mod.substring(1));
+          let emoji;
+
+          // Use numbered emojis for S1-S10, then 🔢 for S11+
+          const numberedEmojis = [
+            "1️⃣",
+            "2️⃣",
+            "3️⃣",
+            "4️⃣",
+            "5️⃣",
+            "6️⃣",
+            "7️⃣",
+            "8️⃣",
+            "9️⃣",
+            "🔟",
+          ];
+          if (revisionCount >= 1 && revisionCount <= 10) {
+            emoji = numberedEmojis[revisionCount - 1];
+          } else {
+            emoji = "🔢";
+          }
+
+          return `<span class="modifier-emoji" title="Keep ${revisionCount} Revisions: Store most recent ${revisionCount} revisions">${emoji}</span>`;
         } else {
           // For unknown modifiers, just show the modifier code
-          return mod;
+          return `<span class="modifier-emoji" title="Unknown modifier: ${mod}">${mod}</span>`;
         }
       })
-      .join(", ");
-    description += ` (${modifierDescriptions})`;
+      .join(" ");
+    description += ` ${modifierEmojis}`;
   }
 
   return description;
@@ -960,13 +997,15 @@ function handleColumnResize(e) {
   if (!isResizing) return;
 
   const deltaX = e.clientX - startX;
-  const newWidth = Math.max(50, startWidth + deltaX); // Minimum width of 50px
+  const newWidth = Math.max(50, startWidth + deltaX); // Minimum width of 3.125rem (50px equivalent)
 
   const table = document.getElementById("typemapTable");
   const headers = table.querySelectorAll("th");
 
   if (headers[currentColumn]) {
-    headers[currentColumn].style.width = newWidth + "px";
+    // Convert to rem for scalability (assuming 16px base font size)
+    const newWidthRem = newWidth / 16;
+    headers[currentColumn].style.width = newWidthRem + "rem";
   }
 }
 
