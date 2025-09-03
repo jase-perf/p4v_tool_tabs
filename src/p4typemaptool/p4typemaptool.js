@@ -540,6 +540,9 @@ function editFileType(ruleId) {
     }
   }
 
+  // Set depot path pattern
+  editor.querySelector("#depotPathPattern").value = rule.pattern;
+
   editor.querySelector("#baseFileType").value = baseType;
 
   // Set regular checkboxes
@@ -657,6 +660,80 @@ function validateFileTypeModifiers(baseType, modifiers) {
   return warnings;
 }
 
+// Update depot path pattern from modal
+function updateDepotPathPattern() {
+  if (!editingRow) return;
+
+  const editor = document.getElementById(`editor_${editingRow}`);
+  if (!editor) return;
+
+  const depotPathInput = editor.querySelector("#depotPathPattern");
+  if (!depotPathInput) return;
+
+  const newPattern = depotPathInput.value.trim();
+
+  // Update the rule immediately
+  const rule = typemapRules.find((r) => r.id === editingRow);
+  if (rule) {
+    rule.pattern = newPattern;
+    markAsChanged();
+  }
+}
+
+// Validate depot path pattern
+function validateDepotPathPattern() {
+  if (!editingRow) return;
+
+  const editor = document.getElementById(`editor_${editingRow}`);
+  if (!editor) return;
+
+  const depotPathInput = editor.querySelector("#depotPathPattern");
+  const warningsDiv = editor.querySelector("#depotPathWarnings");
+
+  if (!depotPathInput || !warningsDiv) return;
+
+  const pattern = depotPathInput.value.trim();
+  const warnings = [];
+
+  // Basic validations
+  if (!pattern) {
+    warnings.push("Depot path pattern is required");
+  } else {
+    if (!pattern.startsWith("//")) {
+      warnings.push("Pattern should start with // (depot path)");
+    }
+
+    if (!pattern.includes("...")) {
+      warnings.push("Pattern should include ... for wildcards");
+    }
+
+    // Check for common patterns
+    if (pattern === "//...") {
+      warnings.push("This pattern matches ALL files - use with caution");
+    }
+
+    // Check for potential issues
+    if (pattern.includes(" ")) {
+      warnings.push("Depot paths should not contain spaces");
+    }
+
+    if (pattern.includes("\\")) {
+      warnings.push(
+        "Use forward slashes (/) in depot paths, not backslashes (\\)"
+      );
+    }
+  }
+
+  // Display warnings
+  if (warnings.length > 0) {
+    warningsDiv.innerHTML = warnings
+      .map((w) => `<div class="validation-warning">${w}</div>`)
+      .join("");
+  } else {
+    warningsDiv.innerHTML = "";
+  }
+}
+
 // Apply file type edit
 function applyFileTypeEdit() {
   if (!editingRow) return;
@@ -665,6 +742,10 @@ function applyFileTypeEdit() {
   if (!editor) return;
 
   const baseType = editor.querySelector("#baseFileType").value;
+
+  // Get the depot path pattern
+  const depotPathInput = editor.querySelector("#depotPathPattern");
+  const newPattern = depotPathInput ? depotPathInput.value.trim() : "";
 
   // Get regular modifiers (exclude the S modifier checkbox)
   const modifiers = Array.from(
@@ -692,6 +773,9 @@ function applyFileTypeEdit() {
   const rule = typemapRules.find((r) => r.id === editingRow);
   if (rule) {
     rule.filetype = fullType;
+    if (newPattern) {
+      rule.pattern = newPattern;
+    }
     markAsChanged();
   }
 

@@ -215,28 +215,30 @@
       }
 
       .modifier-category {
-        margin-bottom: 0.9375rem;
+        margin-bottom: 0.4rem;
       }
 
       .modifier-category h4 {
-        margin: 0 0 0.5rem 0;
+        margin: 0 0 0.25rem 0;
         font-size: 1rem;
       }
 
       .modifier-category label {
         display: block;
         margin-bottom: 0.3125rem;
-        font-size: 1rem;
+        font-size: .9rem;
         cursor: pointer;
       }
 
       .modifier-category input[type="checkbox"] {
         margin-right: 0.5rem;
+        margin-top: 0.1em;
+        margin-bottom: 0.1em;
       }
 
       .result-preview {
         margin-top: 0.625rem;
-        padding: 0.625rem;
+        padding: 0rem;
         border-radius: 0.1875rem;
         opacity: 0.9;
       }
@@ -275,9 +277,9 @@
       }
 
       .help-text {
-        font-size: 1rem;
+        font-size: .8rem;
         font-style: italic;
-        margin-top: 0.3125rem;
+        margin: 0.1rem 0.3125rem 0.1rem 0.3125rem;
         opacity: 0.7;
       }
 
@@ -493,11 +495,33 @@
     <!-- Hidden template for file type editor -->
     <div id="fileTypeEditorTemplate" style="display: none">
       <div class="file-type-editor">
-        <div style="margin-bottom: 0.9375rem">
+        <div style="margin-bottom: 0rem; margin-top: 0rem;">
+          <label for="depotPathPattern">Depot Path Pattern:</label>
+          <input
+            type="text"
+            id="depotPathPattern"
+            style="
+              width: calc(100% - 1rem);
+              padding: 0.3125rem;
+              font-size: 1rem;
+              font-family: monospace;
+            "
+            placeholder="//depot/path/..."
+            onchange="updateDepotPathPattern()"
+            oninput="validateDepotPathPattern()"
+          />
+          <div class="help-text" id="depotPathHelp">
+            Specify the depot path pattern this rule applies to (e.g.,
+            //....cpp)
+          </div>
+          <div id="depotPathWarnings"></div>
+        </div>
+
+        <div style="margin-bottom: 0rem; margin-top: 0rem;">
           <label for="baseFileType">Base File Type:</label>
           <select
             id="baseFileType"
-            style="width: 100%; padding: 0.3125rem; font-size: 1rem"
+            style="width: 100%; padding: 0.3125rem; "
             onchange="updateFileTypePreview()"
           >
             <option value="binary">
@@ -596,11 +620,10 @@
               type="checkbox"
               id="sModifierCheckbox"
               onchange="updateFileTypePreview()"
-              style="margin-right: 0.5rem"
             />
             <label
               for="sModifierCheckbox"
-              style="margin: 0; margin-right: 0.5rem; font-size: 1rem"
+              style="margin-right: 0.5rem;"
               >Limited Revisions (+S)</label
             >
             <input
@@ -651,7 +674,7 @@
 
         <div id="validationWarnings"></div>
 
-        <div style="margin-top: 0.9375rem; text-align: right">
+        <div style="margin-top: 0.2rem; text-align: right">
           <button onclick="cancelFileTypeEdit()" class="btn">Cancel</button>
           <button onclick="applyFileTypeEdit()" class="btn primary">
             Apply
