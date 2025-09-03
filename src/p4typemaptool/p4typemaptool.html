@@ -226,7 +226,7 @@
       .modifier-category label {
         display: block;
         margin-bottom: 0.3125rem;
-        font-size: .9rem;
+        font-size: 0.9rem;
         cursor: pointer;
       }
 
@@ -277,7 +277,7 @@
       }
 
       .help-text {
-        font-size: .8rem;
+        font-size: 0.8rem;
         font-style: italic;
         margin: 0.1rem 0.3125rem 0.1rem 0.3125rem;
         opacity: 0.7;
@@ -433,6 +433,43 @@
         flex-wrap: wrap;
         gap: 0.25rem;
       }
+
+      /* Status message styling */
+      .status-message {
+        margin-left: 1rem;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.1875rem;
+        font-size: 0.9rem;
+        font-weight: normal;
+        background: rgba(0, 123, 204, 0.1);
+        color: #007bcc;
+        border: 1px solid rgba(0, 123, 204, 0.2);
+      }
+
+      .status-message.modified {
+        background: rgba(255, 165, 0, 0.1);
+        color: #ff8c00;
+        border: 1px solid rgba(255, 165, 0, 0.3);
+      }
+
+      body.dark-theme .status-message {
+        background: rgba(255, 255, 255, 0.1);
+        color: #ccc;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+      }
+
+      body.dark-theme .status-message.modified {
+        background: rgba(255, 165, 0, 0.15);
+        color: #ffb347;
+        border: 1px solid rgba(255, 165, 0, 0.4);
+      }
+
+      .status-bar {
+        text-align: center;
+        padding: 0.5rem;
+        font-size: 0.9rem;
+        opacity: 0.8;
+      }
     </style>
     <script type="text/javascript" src="p4typemaptool.js"></script>
   </head>
@@ -450,6 +487,7 @@
         <button onclick="addNewRule()" class="btn primary">Add Rule</button>
         <button onclick="saveTypemap()" class="btn primary">Save</button>
         <button onclick="loadTypemap()" class="btn">Revert/Reload</button>
+        <span id="statusMessageTop" class="status-message">Ready</span>
       </div>
 
       <div id="loadingIndicator" class="loading">Loading typemap...</div>
@@ -478,6 +516,13 @@
                 onmousedown="startColumnResize(event, 2)"
               ></div>
             </th>
+            <th class="sortable" onclick="sortByColumn('comment')">
+              Comment
+              <div
+                class="column-resizer"
+                onmousedown="startColumnResize(event, 3)"
+              ></div>
+            </th>
             <th class="actions-cell">Delete</th>
           </tr>
         </thead>
@@ -486,16 +531,22 @@
         </tbody>
       </table>
 
+      <div class="toolbar">
+        <button onclick="addNewRule()" class="btn primary">Add Rule</button>
+        <button onclick="saveTypemap()" class="btn primary">Save</button>
+        <button onclick="loadTypemap()" class="btn">Revert/Reload</button>
+        <span id="statusMessageBottom" class="status-message">Ready</span>
+      </div>
+
       <div class="status-bar">
-        <span id="statusMessage">Ready</span>
-        <span id="ruleCount" style="float: right"></span>
+        <span id="ruleCount"></span>
       </div>
     </div>
 
     <!-- Hidden template for file type editor -->
     <div id="fileTypeEditorTemplate" style="display: none">
       <div class="file-type-editor">
-        <div style="margin-bottom: 0rem; margin-top: 0rem;">
+        <div style="margin-bottom: 0rem; margin-top: 0rem">
           <label for="depotPathPattern">Depot Path Pattern:</label>
           <input
             type="text"
@@ -517,11 +568,11 @@
           <div id="depotPathWarnings"></div>
         </div>
 
-        <div style="margin-bottom: 0rem; margin-top: 0rem;">
+        <div style="margin-bottom: 0rem; margin-top: 0rem">
           <label for="baseFileType">Base File Type:</label>
           <select
             id="baseFileType"
-            style="width: 100%; padding: 0.3125rem; "
+            style="width: 100%; padding: 0.3125rem"
             onchange="updateFileTypePreview()"
           >
             <option value="binary">
@@ -621,9 +672,7 @@
               id="sModifierCheckbox"
               onchange="updateFileTypePreview()"
             />
-            <label
-              for="sModifierCheckbox"
-              style="margin-right: 0.5rem;"
+            <label for="sModifierCheckbox" style="margin-right: 0.5rem"
               >Limited Revisions (+S)</label
             >
             <input

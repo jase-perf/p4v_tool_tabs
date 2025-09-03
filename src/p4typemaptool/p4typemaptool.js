@@ -121,25 +121,29 @@ async function initializeTypemapEditor() {
 function markAsChanged() {
   hasUnsavedChanges = true;
   updateSaveButtonState();
+  updateStatusWithModifiedState();
 }
 
 function markAsSaved() {
   hasUnsavedChanges = false;
   updateSaveButtonState();
+  updateStatusWithModifiedState();
 }
 
 function updateSaveButtonState() {
-  const saveButton = document.querySelector('button[onclick="saveTypemap()"]');
-  if (saveButton) {
-    saveButton.disabled = !hasUnsavedChanges;
-  }
+  const saveButtons = document.querySelectorAll(
+    'button[onclick="saveTypemap()"]'
+  );
+  saveButtons.forEach((button) => {
+    button.disabled = !hasUnsavedChanges;
+  });
 }
 
 // Load typemap from Perforce
 async function loadTypemap() {
   try {
     const result = await p4vjs.p4(["typemap", "-o"]);
-
+    console.log(result);
     if (result.error) {
       throw new Error(result.error);
     }
@@ -170,8 +174,14 @@ function parseTypemapData(data) {
 
     // Extract all TypeMapN properties and sort them numerically
     const typemapEntries = [];
+    const commentEntries = {};
+
     for (const key in typemapData) {
-      if (key.startsWith("TypeMap")) {
+      if (key.startsWith("TypeMapComment")) {
+        // Extract comment entries separately
+        const index = parseInt(key.replace("TypeMapComment", ""));
+        commentEntries[index] = typemapData[key];
+      } else if (key.startsWith("TypeMap")) {
         const index = parseInt(key.replace("TypeMap", ""));
         typemapEntries.push({ index, value: typemapData[key] });
       }
@@ -190,8 +200,22 @@ function parseTypemapData(data) {
         continue;
       }
 
+      // Parse line: "filetype pattern ## comment"
+      const commentIndex = trimmedLine.indexOf("##");
+      let workingLine =
+        commentIndex >= 0
+          ? trimmedLine.substring(0, commentIndex).trim()
+          : trimmedLine;
+      let comment =
+        commentIndex >= 0 ? trimmedLine.substring(commentIndex + 2).trim() : "";
+
+      // Check for separate comment entry
+      if (!comment && commentEntries[entry.index]) {
+        comment = commentEntries[entry.index].replace(/^##\s*/, "").trim();
+      }
+
       // Split into filetype and pattern
-      const parts = trimmedLine.split(/\s+/);
+      const parts = workingLine.split(/\s+/);
       if (parts.length >= 2) {
         const filetype = parts[0];
         const pattern = parts.slice(1).join(" "); // In case pattern has spaces
@@ -201,6 +225,7 @@ function parseTypemapData(data) {
           order: order++,
           filetype: filetype,
           pattern: pattern,
+          comment: comment,
           originalLine: line,
         });
       }
@@ -285,6 +310,13 @@ function createTableRow(rule, displayIndex) {
             )}" 
                    onchange="updateRulePattern('${rule.id}', this.value)" 
                    onblur="validatePattern('${rule.id}', this.value)">
+        </td>
+        <td>
+            <input type="text" class="pattern-input" value="${escapeHtml(
+              rule.comment || ""
+            )}" 
+                   onchange="updateRuleComment('${rule.id}', this.value)" 
+                   placeholder="Optional comment">
         </td>
         <td class="actions-cell">
             <button onclick="deleteRule('${
@@ -386,6 +418,15 @@ function updateRulePattern(ruleId, newPattern) {
     markAsChanged();
     // Re-check conflicts when pattern changes
     setTimeout(() => renderTable(), 100);
+  }
+}
+
+// Update rule comment
+function updateRuleComment(ruleId, newComment) {
+  const rule = typemapRules.find((r) => r.id === ruleId);
+  if (rule) {
+    rule.comment = newComment;
+    markAsChanged();
   }
 }
 
@@ -929,7 +970,10 @@ function generateTypemapText() {
   const lines = [];
 
   for (const rule of sortedRules) {
-    const line = `        ${rule.filetype} ${rule.pattern}`;
+    let line = `        ${rule.filetype} ${rule.pattern}`;
+    if (rule.comment && rule.comment.trim()) {
+      line += ` ## ${rule.comment.trim()}`;
+    }
     lines.push(line);
   }
 
@@ -938,9 +982,42 @@ function generateTypemapText() {
 
 // Update status message
 function updateStatus(message) {
-  const statusElement = document.getElementById("statusMessage");
-  if (statusElement) {
-    statusElement.textContent = message;
+  const statusElementTop = document.getElementById("statusMessageTop");
+  const statusElementBottom = document.getElementById("statusMessageBottom");
+
+  if (statusElementTop) {
+    statusElementTop.textContent = message;
+  }
+  if (statusElementBottom) {
+    statusElementBottom.textContent = message;
+  }
+}
+
+// Update status message with modified state
+function updateStatusWithModifiedState() {
+  const statusElementTop = document.getElementById("statusMessageTop");
+  const statusElementBottom = document.getElementById("statusMessageBottom");
+
+  if (hasUnsavedChanges) {
+    // Show modified state
+    if (statusElementTop) {
+      statusElementTop.textContent = "Modified";
+      statusElementTop.classList.add("modified");
+    }
+    if (statusElementBottom) {
+      statusElementBottom.textContent = "Modified";
+      statusElementBottom.classList.add("modified");
+    }
+  } else {
+    // Show ready state
+    if (statusElementTop) {
+      statusElementTop.textContent = "Ready";
+      statusElementTop.classList.remove("modified");
+    }
+    if (statusElementBottom) {
+      statusElementBottom.textContent = "Ready";
+      statusElementBottom.classList.remove("modified");
+    }
   }
 }
 
@@ -981,6 +1058,7 @@ function updateSortHeaders() {
     order: 0,
     type: 1,
     pattern: 2,
+    comment: 3,
   };
 
   const columnIndex = columnMap[currentSortBy];
@@ -1010,6 +1088,9 @@ function getSortedRules() {
         break;
       case "type":
         comparison = a.filetype.localeCompare(b.filetype);
+        break;
+      case "comment":
+        comparison = (a.comment || "").localeCompare(b.comment || "");
         break;
       default:
         comparison = a.order - b.order;
