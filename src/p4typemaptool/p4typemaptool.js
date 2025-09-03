@@ -4,7 +4,14 @@
 let typemapRules = [];
 let currentViewMode = "browse";
 let currentSortBy = "order";
+let currentSortDirection = "asc";
 let editingRow = null;
+
+// Column resizing state
+let isResizing = false;
+let currentColumn = -1;
+let startX = 0;
+let startWidth = 0;
 
 // File type definitions
 const fileTypes = {
@@ -79,6 +86,9 @@ const fileModifiers = {
 // Initialize the editor
 async function initializeTypemapEditor() {
   try {
+    // Initialize theme first
+    initializeTheme();
+
     updateStatus("Loading typemap...");
     await loadTypemap();
     updateStatus("Ready");
@@ -191,29 +201,6 @@ function renderTable() {
   detectAndShowConflicts();
 }
 
-// Get sorted rules based on current view mode and sort preference
-function getSortedRules() {
-  let sortedRules = [...typemapRules];
-
-  if (currentViewMode === "browse" && currentSortBy !== "order") {
-    sortedRules.sort((a, b) => {
-      switch (currentSortBy) {
-        case "pattern":
-          return a.pattern.localeCompare(b.pattern);
-        case "type":
-          return a.filetype.localeCompare(b.filetype);
-        default:
-          return a.order - b.order;
-      }
-    });
-  } else {
-    // Always sort by execution order for order mode
-    sortedRules.sort((a, b) => a.order - b.order);
-  }
-
-  return sortedRules;
-}
-
 // Create a table row for a rule
 function createTableRow(rule, displayIndex) {
   const row = document.createElement("tr");
@@ -225,13 +212,29 @@ function createTableRow(rule, displayIndex) {
     row.classList.add("has-conflict");
   }
 
+  // Check if this is the first or last rule for button states
+  const ruleIndex = typemapRules.findIndex((r) => r.id === rule.id);
+  const isFirst = ruleIndex === 0;
+  const isLast = ruleIndex === typemapRules.length - 1;
+
   row.innerHTML = `
-        <td class="drag-handle" ondragstart="dragStart(event)" draggable="true">⣿⣿</td>
         <td class="priority-cell">
-            ${rule.order}
+            <div class="execution-order-controls">
+                <button onclick="moveRuleUp('${
+                  rule.id
+                }')" class="btn order-button" title="Move Up" ${
+    isFirst ? "disabled" : ""
+  }>↑</button>
+                <span>${rule.order}</span>
+                <button onclick="moveRuleDown('${
+                  rule.id
+                }')" class="btn order-button" title="Move Down" ${
+    isLast ? "disabled" : ""
+  }>↓</button>
+            </div>
             ${
               currentViewMode === "browse" && currentSortBy !== "order"
-                ? `<br><small style="color: #666;">(${
+                ? `<br><small style="opacity: 0.6;">(Display: ${
                     displayIndex + 1
                   })</small>`
                 : ""
@@ -268,16 +271,10 @@ function createTableRow(rule, displayIndex) {
         <td class="actions-cell">
             <button onclick="editFileType('${
               rule.id
-            }')" class="btn" title="Edit">✏️</button>
+            }')" class="btn" title="Edit File Type">✏️</button>
             <button onclick="deleteRule('${
               rule.id
-            }')" class="btn danger" title="Delete">🗑️</button>
-            <button onclick="moveRuleUp('${
-              rule.id
-            }')" class="btn" title="Move Up">↑</button>
-            <button onclick="moveRuleDown('${
-              rule.id
-            }')" class="btn" title="Move Down">↓</button>
+            }')" class="btn danger" title="Delete Rule">🗑️</button>
         </td>
     `;
 
@@ -805,70 +802,137 @@ function updateRuleCount() {
   }
 }
 
-// Drag and drop functionality (basic implementation)
-let draggedElement = null;
-
-function dragStart(e) {
-  draggedElement = e.target.closest("tr");
-  e.dataTransfer.effectAllowed = "move";
-  e.dataTransfer.setData("text/html", draggedElement.outerHTML);
-  draggedElement.style.opacity = "0.5";
-}
-
-function dragOver(e) {
-  e.preventDefault();
-  e.dataTransfer.dropEffect = "move";
-}
-
-function drop(e) {
-  e.preventDefault();
-
-  if (draggedElement) {
-    const targetRow = e.target.closest("tr");
-    if (targetRow && targetRow !== draggedElement) {
-      const tbody = targetRow.parentNode;
-
-      // Determine if we're inserting before or after
-      const rect = targetRow.getBoundingClientRect();
-      const midY = rect.top + rect.height / 2;
-
-      if (e.clientY < midY) {
-        tbody.insertBefore(draggedElement, targetRow);
-      } else {
-        tbody.insertBefore(draggedElement, targetRow.nextSibling);
-      }
-
-      // Update rule orders based on new DOM order
-      updateRuleOrdersFromDOM();
-    }
-
-    draggedElement.style.opacity = "1";
-    draggedElement = null;
+// Column sorting functionality
+function sortByColumn(column) {
+  // Toggle sort direction if clicking the same column
+  if (currentSortBy === column) {
+    currentSortDirection = currentSortDirection === "asc" ? "desc" : "asc";
+  } else {
+    currentSortBy = column;
+    currentSortDirection = "asc";
   }
-}
 
-function updateRuleOrdersFromDOM() {
-  const rows = document.querySelectorAll("#typemapTableBody tr");
+  // Update header indicators
+  updateSortHeaders();
 
-  rows.forEach((row, index) => {
-    const ruleId = row.getAttribute("data-rule-id");
-    const rule = typemapRules.find((r) => r.id === ruleId);
-    if (rule) {
-      rule.order = index + 1;
-    }
-  });
-
+  // Re-render table with new sort
   renderTable();
 }
 
-// Add event listeners for drag and drop
-document.addEventListener("DOMContentLoaded", function () {
-  const table = document.getElementById("typemapTable");
-  if (table) {
-    table.addEventListener("dragover", dragOver);
-    table.addEventListener("drop", drop);
+function updateSortHeaders() {
+  // Clear all sort indicators
+  document.querySelectorAll(".typemap-table th").forEach((th) => {
+    th.classList.remove("sort-asc", "sort-desc");
+  });
+
+  // Add indicator to current sort column
+  const columnMap = {
+    type: 1,
+    pattern: 2,
+    comment: 3,
+  };
+
+  const columnIndex = columnMap[currentSortBy];
+  if (columnIndex !== undefined) {
+    const headers = document.querySelectorAll(".typemap-table th");
+    if (headers[columnIndex]) {
+      headers[columnIndex].classList.add(
+        currentSortDirection === "asc" ? "sort-asc" : "sort-desc"
+      );
+    }
   }
-});
+}
+
+// Enhanced sorting function
+function getSortedRules() {
+  let sortedRules = [...typemapRules];
+
+  if (currentViewMode === "browse" && currentSortBy !== "order") {
+    sortedRules.sort((a, b) => {
+      let comparison = 0;
+
+      switch (currentSortBy) {
+        case "pattern":
+          comparison = a.pattern.localeCompare(b.pattern);
+          break;
+        case "type":
+          comparison = a.filetype.localeCompare(b.filetype);
+          break;
+        case "comment":
+          comparison = a.comment.localeCompare(b.comment);
+          break;
+        default:
+          comparison = a.order - b.order;
+      }
+
+      return currentSortDirection === "desc" ? -comparison : comparison;
+    });
+  } else {
+    // Always sort by execution order for order mode
+    sortedRules.sort((a, b) => a.order - b.order);
+  }
+
+  return sortedRules;
+}
+
+// Column resizing functionality
+function startColumnResize(e, columnIndex) {
+  e.preventDefault();
+  e.stopPropagation();
+
+  isResizing = true;
+  currentColumn = columnIndex;
+  startX = e.clientX;
+
+  const table = document.getElementById("typemapTable");
+  const headers = table.querySelectorAll("th");
+  startWidth = headers[columnIndex].offsetWidth;
+
+  document.addEventListener("mousemove", handleColumnResize);
+  document.addEventListener("mouseup", stopColumnResize);
+
+  // Add visual feedback
+  document.body.style.cursor = "col-resize";
+  document.body.style.userSelect = "none";
+}
+
+function handleColumnResize(e) {
+  if (!isResizing) return;
+
+  const deltaX = e.clientX - startX;
+  const newWidth = Math.max(50, startWidth + deltaX); // Minimum width of 50px
+
+  const table = document.getElementById("typemapTable");
+  const headers = table.querySelectorAll("th");
+
+  if (headers[currentColumn]) {
+    headers[currentColumn].style.width = newWidth + "px";
+  }
+}
+
+function stopColumnResize() {
+  isResizing = false;
+  currentColumn = -1;
+
+  document.removeEventListener("mousemove", handleColumnResize);
+  document.removeEventListener("mouseup", stopColumnResize);
+
+  // Remove visual feedback
+  document.body.style.cursor = "";
+  document.body.style.userSelect = "";
+}
+
+// Initialize theme detection
+function initializeTheme() {
+  // Apply dark theme class if using dark theme
+  if (
+    typeof p4vjs !== "undefined" &&
+    p4vjs.useDarkTheme &&
+    p4vjs.useDarkTheme()
+  ) {
+    document.body.classList.add("dark-theme");
+  }
+}
 
 // Handle Enter key in test path input
 document.addEventListener("DOMContentLoaded", function () {
