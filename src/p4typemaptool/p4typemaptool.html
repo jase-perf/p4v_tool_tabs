@@ -159,6 +159,7 @@
         cursor: pointer;
         padding: 0 0.3125rem;
         border-radius: 0.1875rem;
+        margin: 0 0.35em;
       }
 
       .type-label {
@@ -166,6 +167,7 @@
         font-weight: bold;
         font-size: 1rem;
         margin: 0;
+        padding-bottom: 0;
       }
 
       .type-code {
@@ -239,8 +241,7 @@
         opacity: 0.9;
       }
 
-      .pattern-input,
-      .comment-input {
+      .pattern-input {
         width: calc(100% - 0.15rem);
         resize: none;
         padding: 0.3125rem;
@@ -473,13 +474,6 @@
               <div
                 class="column-resizer"
                 onmousedown="startColumnResize(event, 2)"
-              ></div>
-            </th>
-            <th class="sortable" onclick="sortByColumn('comment')">
-              Comment
-              <div
-                class="column-resizer"
-                onmousedown="startColumnResize(event, 3)"
               ></div>
             </th>
             <th class="actions-cell">Delete</th>

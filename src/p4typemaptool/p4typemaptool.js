@@ -190,17 +190,8 @@ function parseTypemapData(data) {
         continue;
       }
 
-      // Parse line: "filetype pattern ## comment"
-      const commentIndex = trimmedLine.indexOf("##");
-      let workingLine =
-        commentIndex >= 0
-          ? trimmedLine.substring(0, commentIndex).trim()
-          : trimmedLine;
-      const comment =
-        commentIndex >= 0 ? trimmedLine.substring(commentIndex + 2).trim() : "";
-
       // Split into filetype and pattern
-      const parts = workingLine.split(/\s+/);
+      const parts = trimmedLine.split(/\s+/);
       if (parts.length >= 2) {
         const filetype = parts[0];
         const pattern = parts.slice(1).join(" "); // In case pattern has spaces
@@ -210,7 +201,6 @@ function parseTypemapData(data) {
           order: order++,
           filetype: filetype,
           pattern: pattern,
-          comment: comment,
           originalLine: line,
         });
       }
@@ -295,12 +285,6 @@ function createTableRow(rule, displayIndex) {
             )}" 
                    onchange="updateRulePattern('${rule.id}', this.value)" 
                    onblur="validatePattern('${rule.id}', this.value)">
-        </td>
-        <td>
-            <input type="text" class="comment-input" value="${escapeHtml(
-              rule.comment
-            )}" 
-                   onchange="updateRuleComment('${rule.id}', this.value)">
         </td>
         <td class="actions-cell">
             <button onclick="deleteRule('${
@@ -405,15 +389,6 @@ function updateRulePattern(ruleId, newPattern) {
   }
 }
 
-// Update rule comment
-function updateRuleComment(ruleId, newComment) {
-  const rule = typemapRules.find((r) => r.id === ruleId);
-  if (rule) {
-    rule.comment = newComment;
-    markAsChanged();
-  }
-}
-
 // Validate pattern
 function validatePattern(ruleId, pattern) {
   const warnings = [];
@@ -441,7 +416,6 @@ function addNewRule() {
     order: typemapRules.length + 1,
     filetype: "binary",
     pattern: "//....",
-    comment: "",
     originalLine: "",
   };
 
@@ -871,12 +845,7 @@ function generateTypemapText() {
   const lines = [];
 
   for (const rule of sortedRules) {
-    let line = `        ${rule.filetype} ${rule.pattern}`;
-
-    if (rule.comment.trim()) {
-      line += ` ## ${rule.comment}`;
-    }
-
+    const line = `        ${rule.filetype} ${rule.pattern}`;
     lines.push(line);
   }
 
@@ -928,7 +897,6 @@ function updateSortHeaders() {
     order: 0,
     type: 1,
     pattern: 2,
-    comment: 3,
   };
 
   const columnIndex = columnMap[currentSortBy];
@@ -958,9 +926,6 @@ function getSortedRules() {
         break;
       case "type":
         comparison = a.filetype.localeCompare(b.filetype);
-        break;
-      case "comment":
-        comparison = a.comment.localeCompare(b.comment);
         break;
       default:
         comparison = a.order - b.order;
