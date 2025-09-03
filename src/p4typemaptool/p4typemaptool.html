@@ -113,7 +113,7 @@
       }
 
       .priority-cell {
-        width: 120px;
+        width: 80px;
         text-align: center;
       }
 
@@ -175,6 +175,16 @@
         width: 90%;
         max-height: 80vh;
         overflow-y: auto;
+        background: #f1f4f9;
+        border: 1px solid #6e6e6e;
+        color: #6e6e6e;
+      }
+
+      /* Dark theme override for modal */
+      body.dark-theme .file-type-editor {
+        background: #363636;
+        color: #f1f4f9;
+        border: 1px solid #fefefe;
       }
 
       .editor-overlay {
@@ -224,7 +234,7 @@
       }
 
       .actions-cell {
-        width: 120px;
+        width: 80px;
         text-align: center;
       }
 
@@ -258,6 +268,41 @@
         text-align: center;
         padding: 40px;
         opacity: 0.7;
+      }
+
+      /* Button styling improvements */
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+        background-color: #e0e0e0 !important;
+        color: #999 !important;
+        border-color: #ccc !important;
+      }
+
+      body.dark-theme button:disabled {
+        background-color: #2a2a2a !important;
+        color: #666 !important;
+        border-color: #444 !important;
+      }
+
+      button:hover:not(:disabled) {
+        transform: translateY(-1px);
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+        transition: all 0.1s ease;
+      }
+
+      button:active:not(:disabled) {
+        transform: translateY(0);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
+        transition: all 0.05s ease;
+      }
+
+      body.dark-theme button:hover:not(:disabled) {
+        box-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
+      }
+
+      body.dark-theme button:active:not(:disabled) {
+        box-shadow: 0 1px 2px rgba(255, 255, 255, 0.1);
       }
 
       /* Dark theme specific overrides */
@@ -298,7 +343,7 @@
       <div class="toolbar">
         <button onclick="addNewRule()" class="btn primary">Add Rule</button>
         <button onclick="saveTypemap()" class="btn primary">Save</button>
-        <button onclick="loadTypemap()" class="btn">Reload</button>
+        <button onclick="loadTypemap()" class="btn">Revert/Reload</button>
       </div>
 
       <div id="loadingIndicator" class="loading">Loading typemap...</div>
@@ -334,7 +379,7 @@
                 onmousedown="startColumnResize(event, 3)"
               ></div>
             </th>
-            <th class="actions-cell">Actions</th>
+            <th class="actions-cell">Delete</th>
           </tr>
         </thead>
         <tbody id="typemapTableBody">
@@ -447,22 +492,30 @@
             />
             Full Uncompressed (+F) - Full file per revision, uncompressed</label
           >
-          <label
-            ><input
+          <div style="display: flex; align-items: center; margin-bottom: 5px">
+            <input
               type="checkbox"
-              value="S"
+              id="sModifierCheckbox"
               onchange="updateFileTypePreview()"
+              style="margin-right: 8px"
             />
-            Head Only (+S) - Only store latest revision</label
-          >
-          <label
-            ><input
-              type="checkbox"
-              value="S10"
+            <label for="sModifierCheckbox" style="margin: 0; margin-right: 8px"
+              >Limited Revisions (+S)</label
+            >
+            <input
+              type="number"
+              id="sModifierValue"
+              min="1"
+              max="999"
+              placeholder="1"
+              style="width: 60px; padding: 2px; margin: 0"
               onchange="updateFileTypePreview()"
+              oninput="updateFileTypePreview()"
             />
-            Keep 10 Revisions (+S10) - Store most recent 10 revisions</label
-          >
+            <span style="margin-left: 5px; font-size: 0.8em; opacity: 0.7"
+              >revisions (leave empty for head only)</span
+            >
+          </div>
         </div>
 
         <div class="modifier-category">

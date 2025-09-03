@@ -5,6 +5,7 @@ let typemapRules = [];
 let currentSortBy = "order";
 let currentSortDirection = "asc";
 let editingRow = null;
+let hasUnsavedChanges = false;
 
 // Column resizing state
 let isResizing = false;
@@ -15,7 +16,7 @@ let startWidth = 0;
 // File type definitions
 const fileTypes = {
   binary: {
-    label: "Binary - Non-text file (images, executables, etc.)",
+    label: "Binary - Binary file",
     description: "Synced as binary files, stored compressed",
   },
   text: {
@@ -35,7 +36,7 @@ const fileTypes = {
     description: "Synced with UTF-8 byte order mark",
   },
   utf16: {
-    label: "UTF-16 - Unicode file",
+    label: "UTF-16 - Unicode 16 file",
     description: "Transferred as UTF-8, translated to UTF-16 in workspace",
   },
 };
@@ -59,12 +60,12 @@ const fileModifiers = {
     description: "Only expands $Id$ and $Header$",
   },
   C: {
-    label: "Compressed Storage",
+    label: "Store Compressed",
     description: "Full compressed version per revision",
   },
-  D: { label: "Delta Storage", description: "Store deltas in RCS format" },
+  D: { label: "RCS Storage", description: "Store deltas in RCS format" },
   F: {
-    label: "Full Uncompressed",
+    label: "Store Uncompressed",
     description: "Full file per revision, uncompressed",
   },
   S: { label: "Head Only", description: "Only store latest revision" },
@@ -91,9 +92,30 @@ async function initializeTypemapEditor() {
     updateStatus("Loading typemap...");
     await loadTypemap();
     updateStatus("Ready");
+
+    // Initialize Save button state
+    updateSaveButtonState();
   } catch (error) {
     updateStatus("Error loading typemap: " + error.message);
     console.error("Initialization error:", error);
+  }
+}
+
+// Track changes and update Save button state
+function markAsChanged() {
+  hasUnsavedChanges = true;
+  updateSaveButtonState();
+}
+
+function markAsSaved() {
+  hasUnsavedChanges = false;
+  updateSaveButtonState();
+}
+
+function updateSaveButtonState() {
+  const saveButton = document.querySelector('button[onclick="saveTypemap()"]');
+  if (saveButton) {
+    saveButton.disabled = !hasUnsavedChanges;
   }
 }
 
@@ -110,6 +132,9 @@ async function loadTypemap() {
     typemapRules = parseTypemapData(result.data);
     renderTable();
     updateRuleCount();
+
+    // Reset change tracking after loading
+    markAsSaved();
 
     document.getElementById("loadingIndicator").style.display = "none";
     document.getElementById("typemapTable").style.display = "table";
@@ -274,7 +299,30 @@ function createTableRow(rule, displayIndex) {
 // Get human-readable description of file type
 function getFileTypeDescription(filetype) {
   const [baseType, modifierString] = filetype.split("+");
-  const modifiers = modifierString ? modifierString.match(/.{1,2}/g) || [] : []; // Handle S10, S2, etc.
+
+  // Parse modifiers more carefully to handle multi-character ones like S10
+  const modifiers = [];
+  if (modifierString) {
+    let i = 0;
+    while (i < modifierString.length) {
+      // Check for multi-character modifiers first (S followed by digits)
+      if (
+        modifierString[i] === "S" &&
+        i + 1 < modifierString.length &&
+        /\d/.test(modifierString[i + 1])
+      ) {
+        let j = i + 1;
+        while (j < modifierString.length && /\d/.test(modifierString[j])) {
+          j++;
+        }
+        modifiers.push(modifierString.substring(i, j));
+        i = j;
+      } else {
+        modifiers.push(modifierString[i]);
+        i++;
+      }
+    }
+  }
 
   let description = fileTypes[baseType]
     ? fileTypes[baseType].label.split(" - ")[1]
@@ -282,9 +330,21 @@ function getFileTypeDescription(filetype) {
 
   if (modifiers.length > 0) {
     const modifierDescriptions = modifiers
-      .map((mod) => (fileModifiers[mod] ? fileModifiers[mod].label : `+${mod}`))
+      .map((mod) => {
+        if (fileModifiers[mod]) {
+          return fileModifiers[mod].label;
+        } else if (mod === "S") {
+          return "Head Only";
+        } else if (mod.startsWith("S") && /\d/.test(mod.substring(1))) {
+          const revisionCount = mod.substring(1);
+          return `Latest ${revisionCount} Only`;
+        } else {
+          // For unknown modifiers, just show the modifier code
+          return mod;
+        }
+      })
       .join(", ");
-    description += ` + ${modifierDescriptions}`;
+    description += ` (${modifierDescriptions})`;
   }
 
   return description;
@@ -302,6 +362,7 @@ function updateRulePattern(ruleId, newPattern) {
   const rule = typemapRules.find((r) => r.id === ruleId);
   if (rule) {
     rule.pattern = newPattern;
+    markAsChanged();
     // Re-check conflicts when pattern changes
     setTimeout(() => renderTable(), 100);
   }
@@ -312,6 +373,7 @@ function updateRuleComment(ruleId, newComment) {
   const rule = typemapRules.find((r) => r.id === ruleId);
   if (rule) {
     rule.comment = newComment;
+    markAsChanged();
   }
 }
 
@@ -347,6 +409,7 @@ function addNewRule() {
   };
 
   typemapRules.push(newRule);
+  markAsChanged();
   renderTable();
   updateRuleCount();
 
@@ -365,6 +428,7 @@ function deleteRule(ruleId) {
   if (confirm("Are you sure you want to delete this rule?")) {
     typemapRules = typemapRules.filter((r) => r.id !== ruleId);
     reorderRules();
+    markAsChanged();
     renderTable();
     updateRuleCount();
   }
@@ -386,6 +450,7 @@ function moveRuleUp(ruleId) {
     currentRule.order = previousRule.order;
     previousRule.order = tempOrder;
 
+    markAsChanged();
     renderTable();
   }
 }
@@ -404,6 +469,7 @@ function moveRuleDown(ruleId) {
     currentRule.order = nextRule.order;
     nextRule.order = tempOrder;
 
+    markAsChanged();
     renderTable();
   }
 }
@@ -440,12 +506,50 @@ function editFileType(ruleId) {
 
   // Set current values
   const [baseType, modifierString] = rule.filetype.split("+");
-  const modifiers = modifierString ? modifierString.match(/.{1,2}/g) || [] : [];
+
+  // Parse modifiers more carefully to handle S modifiers
+  const modifiers = [];
+  let sModifier = null;
+
+  if (modifierString) {
+    let i = 0;
+    while (i < modifierString.length) {
+      // Check for S modifier with optional number
+      if (modifierString[i] === "S") {
+        let j = i + 1;
+        while (j < modifierString.length && /\d/.test(modifierString[j])) {
+          j++;
+        }
+        sModifier = modifierString.substring(i, j);
+        i = j;
+      } else {
+        modifiers.push(modifierString[i]);
+        i++;
+      }
+    }
+  }
 
   editor.querySelector("#baseFileType").value = baseType;
+
+  // Set regular checkboxes
   editor.querySelectorAll('input[type="checkbox"]').forEach((cb) => {
     cb.checked = modifiers.includes(cb.value);
   });
+
+  // Handle S modifier specially
+  const sCheckbox = editor.querySelector("#sModifierCheckbox");
+  const sValue = editor.querySelector("#sModifierValue");
+  if (sModifier) {
+    sCheckbox.checked = true;
+    if (sModifier === "S") {
+      sValue.value = ""; // Head only
+    } else {
+      sValue.value = sModifier.substring(1); // Extract number after S
+    }
+  } else {
+    sCheckbox.checked = false;
+    sValue.value = "";
+  }
 
   cell.appendChild(editor);
   editingRow = ruleId;
@@ -461,9 +565,25 @@ function updateFileTypePreview() {
   if (!editor) return;
 
   const baseType = editor.querySelector("#baseFileType").value;
+
+  // Get regular modifiers (exclude the S modifier checkbox)
   const modifiers = Array.from(
-    editor.querySelectorAll('input[type="checkbox"]:checked')
+    editor.querySelectorAll(
+      'input[type="checkbox"]:checked:not(#sModifierCheckbox)'
+    )
   ).map((cb) => cb.value);
+
+  // Handle the custom S modifier separately
+  const sCheckbox = editor.querySelector("#sModifierCheckbox");
+  const sValue = editor.querySelector("#sModifierValue");
+  if (sCheckbox && sCheckbox.checked) {
+    const revisionCount = sValue.value.trim();
+    if (revisionCount && revisionCount !== "1") {
+      modifiers.push(`S${revisionCount}`);
+    } else {
+      modifiers.push("S");
+    }
+  }
 
   const fullType =
     modifiers.length > 0 ? `${baseType}+${modifiers.join("")}` : baseType;
@@ -534,9 +654,25 @@ function applyFileTypeEdit() {
   if (!editor) return;
 
   const baseType = editor.querySelector("#baseFileType").value;
+
+  // Get regular modifiers (exclude the S modifier checkbox)
   const modifiers = Array.from(
-    editor.querySelectorAll('input[type="checkbox"]:checked')
+    editor.querySelectorAll(
+      'input[type="checkbox"]:checked:not(#sModifierCheckbox)'
+    )
   ).map((cb) => cb.value);
+
+  // Handle the custom S modifier separately
+  const sCheckbox = editor.querySelector("#sModifierCheckbox");
+  const sValue = editor.querySelector("#sModifierValue");
+  if (sCheckbox && sCheckbox.checked) {
+    const revisionCount = sValue.value.trim();
+    if (revisionCount && revisionCount !== "1") {
+      modifiers.push(`S${revisionCount}`);
+    } else {
+      modifiers.push("S");
+    }
+  }
 
   const fullType =
     modifiers.length > 0 ? `${baseType}+${modifiers.join("")}` : baseType;
@@ -545,6 +681,7 @@ function applyFileTypeEdit() {
   const rule = typemapRules.find((r) => r.id === editingRow);
   if (rule) {
     rule.filetype = fullType;
+    markAsChanged();
   }
 
   cancelFileTypeEdit();
@@ -677,6 +814,7 @@ async function saveTypemap() {
     }
 
     updateStatus("Typemap saved successfully");
+    markAsSaved();
 
     // Refresh P4V if possible
     if (typeof p4vjs.refreshAll === "function") {
