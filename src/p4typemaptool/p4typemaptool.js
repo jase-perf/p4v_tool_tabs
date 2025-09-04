@@ -242,7 +242,7 @@ function parseTypemapData(data) {
 
 // Generate unique ID for rules
 function generateId() {
-  return "rule_" + Date.now() + "_" + Math.random().toString(36).substr(2, 9);
+  return P4Utils.generateId("rule");
 }
 
 // Render the table
@@ -410,9 +410,7 @@ function getFileTypeDescription(filetype) {
 
 // Escape HTML for safe display
 function escapeHtml(text) {
-  const div = document.createElement("div");
-  div.textContent = text;
-  return div.innerHTML;
+  return P4Utils.escapeHtml(text);
 }
 
 // Update rule pattern
@@ -1158,14 +1156,7 @@ function stopColumnResize() {
 
 // Initialize theme detection
 function initializeTheme() {
-  // Apply dark theme class if using dark theme
-  if (
-    typeof p4vjs !== "undefined" &&
-    p4vjs.useDarkTheme &&
-    p4vjs.useDarkTheme()
-  ) {
-    document.body.classList.add("dark-theme");
-  }
+  P4Utils.initializeTheme();
 }
 
 // Template functionality - now uses URLs instead of local files
@@ -1211,65 +1202,19 @@ async function loadAvailableTemplates() {
   }
 }
 
-// Get predefined template URLs - modify these URLs as needed
+// Get predefined template URLs from configuration
 function getTemplateUrls() {
-  return [
-    {
-      name: "Game Development",
-      description:
-        "Optimized for game development projects with Unity, Unreal, and common game assets",
-      url: "https://gist.githubusercontent.com/jase-perf/3f6328fb66427802090f458775e481df/raw/52ccf0b5a46da9c237f6803f375a82b840c0a9ac/p4%2520universal%2520game%2520dev%2520typemap",
-    },
-    {
-      name: "Game Development with Delta Transfer",
-      description:
-        "Enables delta transfer for better network performance with large files (at the expense of using more storage space)",
-      url: "https://gist.githubusercontent.com/jase-perf/3bcfa1ac2219e695fd1b05abc0487b40/raw/d2a71de32642211339ec930b631aef0d6b705088/Delta_Transfer_Enabled.typemap",
-    },
-  ];
+  return TemplateConfig.getTemplateUrls();
 }
 
 // Extract metadata from template content
 function extractTemplateMetadata(content, filename) {
-  const lines = content.split("\n");
-  let name = filename.replace(".typemap", "").replace(/_/g, " ");
-  let description = "Perforce typemap template";
-
-  // Look for metadata in comments at the top of the file
-  for (const line of lines.slice(0, 10)) {
-    // Check first 10 lines
-    const trimmed = line.trim();
-
-    // Look for template name in comments
-    if (trimmed.startsWith("# Template:") || trimmed.startsWith("# Name:")) {
-      name = trimmed.split(":")[1].trim();
-    }
-
-    // Look for description in comments
-    if (trimmed.startsWith("# Description:")) {
-      description = trimmed.split(":")[1].trim();
-    }
-
-    // Stop at TypeMap section
-    if (trimmed === "TypeMap:") {
-      break;
-    }
-  }
-
-  // Generate user-friendly name from filename if no metadata found
-  if (name === filename.replace(".typemap", "").replace(/_/g, " ")) {
-    name = generateFriendlyName(filename);
-  }
-
-  return { name, description };
+  return P4Utils.extractTemplateMetadata(content, filename);
 }
 
 // Generate a user-friendly name from filename
 function generateFriendlyName(filename) {
-  return filename
-    .replace(".typemap", "")
-    .replace(/_/g, " ")
-    .replace(/\b\w/g, (l) => l.toUpperCase());
+  return P4Utils.generateFriendlyName(filename);
 }
 
 function populateTemplateDropdown() {
@@ -1359,111 +1304,12 @@ async function loadSelectedTemplate() {
 
 // Load template content from URL - works with both HTTP/HTTPS URLs and GitHub raw URLs
 async function loadTemplateFromUrl(url) {
-  console.log(`Loading template from URL: ${url}`);
-
-  // Check if we're running from file:// origin, which has CORS restrictions
-  const isFileOrigin = window.location.protocol === "file:";
-
-  // For file:// origins or P4V environments, prefer XHR first as it handles CORS better
-  if (isFileOrigin || typeof p4vjs !== "undefined") {
-    try {
-      const content = await loadUrlWithXHR(url);
-      console.log(`Successfully loaded template via XHR from: ${url}`);
-      return content;
-    } catch (xhrError) {
-      console.log(`XHR failed for ${url}: ${xhrError.message}`);
-
-      // Fallback to fetch if XHR fails
-      try {
-        const response = await fetch(url, {
-          method: "GET",
-          headers: {
-            Accept: "text/plain, application/octet-stream, */*",
-            "Cache-Control": "no-cache",
-          },
-          signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined,
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-
-        const content = await response.text();
-        console.log(`Successfully loaded template via fetch from: ${url}`);
-        return content;
-      } catch (fetchError) {
-        console.log(`Fetch also failed for ${url}: ${fetchError.message}`);
-        throw new Error(
-          `Unable to load template from ${url}: ${xhrError.message}`
-        );
-      }
-    }
-  } else {
-    // For HTTP origins, try fetch first
-    try {
-      const response = await fetch(url, {
-        method: "GET",
-        headers: {
-          Accept: "text/plain, application/octet-stream, */*",
-          "Cache-Control": "no-cache",
-        },
-        signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined,
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-      }
-
-      const content = await response.text();
-      console.log(`Successfully loaded template via fetch from: ${url}`);
-      return content;
-    } catch (error) {
-      console.log(`Fetch failed for ${url}: ${error.message}`);
-
-      // Fallback to XHR
-      try {
-        const content = await loadUrlWithXHR(url);
-        console.log(`Successfully loaded template via XHR from: ${url}`);
-        return content;
-      } catch (xhrError) {
-        console.log(`XHR also failed for ${url}: ${xhrError.message}`);
-        throw new Error(
-          `Unable to load template from ${url}: ${error.message}`
-        );
-      }
-    }
-  }
+  return P4Utils.loadUrlWithFallback(url);
 }
 
 // Helper function to load URLs using XMLHttpRequest (fallback method)
 function loadUrlWithXHR(url) {
-  return new Promise((resolve, reject) => {
-    const xhr = new XMLHttpRequest();
-    xhr.open("GET", url, true);
-    xhr.timeout = 10000; // 10 second timeout
-
-    xhr.onreadystatechange = function () {
-      if (xhr.readyState === 4) {
-        if (xhr.status === 200) {
-          resolve(xhr.responseText);
-        } else {
-          reject(
-            new Error(`XHR failed with status: ${xhr.status} ${xhr.statusText}`)
-          );
-        }
-      }
-    };
-
-    xhr.onerror = function () {
-      reject(new Error("XHR network error"));
-    };
-
-    xhr.ontimeout = function () {
-      reject(new Error("XHR request timed out"));
-    };
-
-    xhr.send();
-  });
+  return P4Utils.loadUrlWithXHR(url);
 }
 
 function parseTemplateContent(content) {
