@@ -19,7 +19,7 @@ The purpose of this tool is to make it much easier to work with your typemap rig
 
 ### Installation
 
-1. Download the `typemaptab.xml` from the Releases page (or directly from this repo)
+1. Download the `typemaptab.xml` from the [Releases page](https://github.com/jase-perf/p4v_tool_tabs/releases/) (or directly from this repo)
 2. In P4 Admin, go to Tools > Manage Tools > HTML Tabs...
 ![Selecting Tools, Manage Tools, HTML Tabs menu option](toolsmenu.png)
 3. In the Manage HTML Tabs window, select Import HTML Tabs...
