@@ -1168,38 +1168,36 @@ function initializeTheme() {
   }
 }
 
-// Template functionality
+// Template functionality - now uses URLs instead of local files
 async function loadAvailableTemplates() {
   try {
     availableTemplates = [];
 
-    // Since we can't dynamically discover files in P4V, we'll manually add known templates
-    // These templates exist in the templates/ directory
-    const knownTemplates = [
-      {
-        filename: "Game_Dev.typemap",
-        name: "Game Development",
-        description:
-          "File type mappings for game development projects (Unity, Unreal, etc.)",
-      },
-      {
-        filename: "Delta_Transfer_Enabled.typemap",
-        name: "Delta Transfer Enabled",
-        description: "Template with delta transfer optimizations",
-      },
-    ];
+    // Get predefined template URLs
+    const templateUrls = getTemplateUrls();
 
-    // Test if templates are accessible and add them to available list
-    for (const template of knownTemplates) {
+    for (const template of templateUrls) {
       try {
-        // Try to access the template to verify it exists
-        const response = await fetch(`templates/${template.filename}`);
-        if (response.ok) {
-          availableTemplates.push(template);
-          console.log(`Template found: ${template.name}`);
-        }
+        // Load template content to extract metadata
+        const content = await loadTemplateFromUrl(template.url);
+        const metadata = extractTemplateMetadata(content, template.name);
+
+        availableTemplates.push({
+          url: template.url,
+          name: metadata.name || template.name,
+          description: metadata.description || template.description,
+        });
+
+        console.log(`Template loaded: ${metadata.name || template.name}`);
       } catch (error) {
-        console.log(`Template not accessible: ${template.filename}`);
+        console.warn(`Failed to load template ${template.name}:`, error);
+        // Add template to list even if it failed to load, but mark it as unavailable
+        availableTemplates.push({
+          url: template.url,
+          name: template.name,
+          description: `${template.description} (Currently unavailable)`,
+          unavailable: true,
+        });
       }
     }
 
@@ -1211,6 +1209,67 @@ async function loadAvailableTemplates() {
   } catch (error) {
     console.error("Error loading templates:", error);
   }
+}
+
+// Get predefined template URLs - modify these URLs as needed
+function getTemplateUrls() {
+  return [
+    {
+      name: "Game Development",
+      description:
+        "Optimized for game development projects with Unity, Unreal, and common game assets",
+      url: "https://gist.githubusercontent.com/jase-perf/3f6328fb66427802090f458775e481df/raw/52ccf0b5a46da9c237f6803f375a82b840c0a9ac/p4%2520universal%2520game%2520dev%2520typemap",
+    },
+    {
+      name: "Game Development with Delta Transfer",
+      description:
+        "Enables delta transfer for better network performance with large files (at the expense of using more storage space)",
+      url: "https://gist.githubusercontent.com/jase-perf/3bcfa1ac2219e695fd1b05abc0487b40/raw/d2a71de32642211339ec930b631aef0d6b705088/Delta_Transfer_Enabled.typemap",
+    },
+  ];
+}
+
+// Extract metadata from template content
+function extractTemplateMetadata(content, filename) {
+  const lines = content.split("\n");
+  let name = filename.replace(".typemap", "").replace(/_/g, " ");
+  let description = "Perforce typemap template";
+
+  // Look for metadata in comments at the top of the file
+  for (const line of lines.slice(0, 10)) {
+    // Check first 10 lines
+    const trimmed = line.trim();
+
+    // Look for template name in comments
+    if (trimmed.startsWith("# Template:") || trimmed.startsWith("# Name:")) {
+      name = trimmed.split(":")[1].trim();
+    }
+
+    // Look for description in comments
+    if (trimmed.startsWith("# Description:")) {
+      description = trimmed.split(":")[1].trim();
+    }
+
+    // Stop at TypeMap section
+    if (trimmed === "TypeMap:") {
+      break;
+    }
+  }
+
+  // Generate user-friendly name from filename if no metadata found
+  if (name === filename.replace(".typemap", "").replace(/_/g, " ")) {
+    name = generateFriendlyName(filename);
+  }
+
+  return { name, description };
+}
+
+// Generate a user-friendly name from filename
+function generateFriendlyName(filename) {
+  return filename
+    .replace(".typemap", "")
+    .replace(/_/g, " ")
+    .replace(/\b\w/g, (l) => l.toUpperCase());
 }
 
 function populateTemplateDropdown() {
@@ -1225,9 +1284,16 @@ function populateTemplateDropdown() {
   // Add template options
   availableTemplates.forEach((template) => {
     const option = document.createElement("option");
-    option.value = template.filename;
+    option.value = template.url; // Use URL instead of filename
     option.textContent = template.name;
     option.title = template.description;
+
+    // Mark unavailable templates visually
+    if (template.unavailable) {
+      option.style.color = "#999";
+      option.style.fontStyle = "italic";
+    }
+
     select.appendChild(option);
   });
 }
@@ -1245,21 +1311,26 @@ async function loadSelectedTemplate() {
   const select = document.getElementById("templateSelect");
   if (!select || !select.value) return;
 
-  const templateFilename = select.value;
-  const template = availableTemplates.find(
-    (t) => t.filename === templateFilename
-  );
+  const templateUrl = select.value;
+  const template = availableTemplates.find((t) => t.url === templateUrl);
 
   if (!template) {
     alert("Template not found");
     return;
   }
 
+  if (template.unavailable) {
+    alert(
+      `Template "${template.name}" is currently unavailable. Please try again later.`
+    );
+    return;
+  }
+
   try {
     updateStatus("Loading template...");
 
-    // Load the template file content
-    const templateContent = await loadTemplateFile(templateFilename);
+    // Load the template file content from URL
+    const templateContent = await loadTemplateFromUrl(templateUrl);
 
     // Parse the template
     const templateRules = parseTemplateContent(templateContent);
@@ -1286,345 +1357,113 @@ async function loadSelectedTemplate() {
   }
 }
 
-async function loadTemplateFile(filename) {
-  // Since we can't easily read files from the browser, we'll use a fetch approach
-  // This assumes the template files are accessible via HTTP
-  try {
-    const response = await fetch(`templates/${filename}`);
-    if (!response.ok) {
-      throw new Error(`Failed to load template: ${response.status}`);
+// Load template content from URL - works with both HTTP/HTTPS URLs and GitHub raw URLs
+async function loadTemplateFromUrl(url) {
+  console.log(`Loading template from URL: ${url}`);
+
+  // Check if we're running from file:// origin, which has CORS restrictions
+  const isFileOrigin = window.location.protocol === "file:";
+
+  // For file:// origins or P4V environments, prefer XHR first as it handles CORS better
+  if (isFileOrigin || typeof p4vjs !== "undefined") {
+    try {
+      const content = await loadUrlWithXHR(url);
+      console.log(`Successfully loaded template via XHR from: ${url}`);
+      return content;
+    } catch (xhrError) {
+      console.log(`XHR failed for ${url}: ${xhrError.message}`);
+
+      // Fallback to fetch if XHR fails
+      try {
+        const response = await fetch(url, {
+          method: "GET",
+          headers: {
+            Accept: "text/plain, application/octet-stream, */*",
+            "Cache-Control": "no-cache",
+          },
+          signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined,
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        const content = await response.text();
+        console.log(`Successfully loaded template via fetch from: ${url}`);
+        return content;
+      } catch (fetchError) {
+        console.log(`Fetch also failed for ${url}: ${fetchError.message}`);
+        throw new Error(
+          `Unable to load template from ${url}: ${xhrError.message}`
+        );
+      }
     }
-    return await response.text();
-  } catch (error) {
-    // Fallback: provide inline content for known templates
-    if (filename === "Game_Dev.typemap") {
-      return `# Perforce File Type Mapping Specifications.
-#
-#  TypeMap:     a list of filetype mappings; one per line.
-#               Each line has two elements:
-#
-#               Filetype: The filetype to use on 'p4 add'.
-#
-#               Path:     File pattern which will use this filetype.
-#
-# See 'p4 help typemap' for more information.
+  } else {
+    // For HTTP origins, try fetch first
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        headers: {
+          Accept: "text/plain, application/octet-stream, */*",
+          "Cache-Control": "no-cache",
+        },
+        signal: AbortSignal.timeout ? AbortSignal.timeout(10000) : undefined,
+      });
 
-TypeMap:
-        text //....asmdef
-        text //....asmref
-        text //....cginc
-        text //....cm
-        text //....compute
-        text //....cs
-        text //....csv
-        text //....editorconfig
-        text //....gitignore
-        text //....hlsl
-        text //....js
-        text //....json
-        text //....md
-        text //....package
-        text //....proc
-        text //....rsp
-        text //....shader
-        text //....template
-        text //....txt
-        text //....uss
-        text //....xml
-        text //....yaml
-        text+l //....md5anim
-        text+l //....md5mesh
-        text+l //....meta
-        text+w //....config
-        text+w //....DotSettings
-        text+w //....ini
-        text+w //....log
-        text+w //....modules
-        text+w //....pdm
-        text+w //....target
-        text+w //....uatbuildrecord
-        text+w //....uproject
-        text+w //....version
-        binary+Fl //....avi
-        binary+Fl //....bz2
-        binary+Fl //....gif
-        binary+Fl //....gz
-        binary+Fl //....jar
-        binary+Fl //....jpeg
-        binary+Fl //....jpg
-        binary+Fl //....mov
-        binary+Fl //....mpg
-        binary+Fl //....rar
-        binary+Fl //....tif
-        binary+Fl //....tiff
-        binary+Fl //....zip
-        binary+l //....a
-        binary+l //....aac
-        binary+l //....aar
-        binary+l //....aas
-        binary+l //....ae
-        binary+l //....ai
-        binary+l //....aiff
-        binary+l //....anim
-        binary+l //....apk
-        binary+l //....asset
-        binary+l //....bik
-        binary+l //....bin
-        binary+l //....blend
-        binary+l //....bmp
-        binary+l //....bnk
-        binary+l //....btr
-        binary+l //....celtx
-        binary+l //....cfm
-        binary+l //....class
-        binary+l //....clip
-        binary+l //....controller
-        binary+l //....cubemap
-        binary+l //....dae
-        binary+l //....data
-        binary+l //....dds
-        binary+l //....demo
-        binary+l //....doc
-        binary+l //....docx
-        binary+l //....dot
-        binary+l //....ear
-        binary+l //....fbx
-        binary+l //....flac
-        binary+l //....fnt
-        binary+l //....ibl
-        binary+l //....ico
-        binary+l //....ip
-        binary+l //....light
-        binary+l //....lighting
-        binary+l //....lwo
-        binary+l //....m4a
-        binary+l //....ma
-        binary+l //....mask
-        binary+l //....mat
-        binary+l //....mb
-        binary+l //....mp3
-        binary+l //....mp4
-        binary+l //....navmesh
-        binary+l //....obj
-        binary+l //....odg
-        binary+l //....odp
-        binary+l //....ods
-        binary+l //....odt
-        binary+l //....ogg
-        binary+l //....otf
-        binary+l //....otg
-        binary+l //....ots
-        binary+l //....ott
-        binary+l //....overrideController
-        binary+l //....pac
-        binary+l //....pdf
-        binary+l //....physicMaterial
-        binary+l //....png
-        binary+l //....ppt
-        binary+l //....pptx
-        binary+l //....prefab
-        binary+l //....prefab.unity
-        binary+l //....psb
-        binary+l //....psd
-        binary+l //....raw
-        binary+l //....renderTexture
-        binary+l //....res
-        binary+l //....response
-        binary+l //....roq
-        binary+l //....rpt
-        binary+l //....shadow
-        binary+l //....skp
-        binary+l //....so
-        binary+l //....sxw
-        binary+l //....tar
-        binary+l //....terrain
-        binary+l //....tga
-        binary+l //....tres
-        binary+l //....ttf
-        binary+l //....u
-        binary+l //....uasset
-        binary+l //....udk
-        binary+l //....umap
-        binary+l //....unity
-        binary+l //....unitypackage
-        binary+l //....upk
-        binary+l //....war
-        binary+l //....wav
-        binary+l //....webm
-        binary+l //....wma
-        binary+l //....wmv
-        binary+l //....xls
-        binary+l //....xlsx
-        binary+w //....app
-        binary+w //....dll
-        binary+w //....dylib
-        binary+w //....exe
-        binary+w //....exp
-        binary+w //....ipa
-        binary+w //....lib
-        binary+w //....pdb
-        binary+w //....rc
-        binary+w //....stub
-        binary+w //....ubulk
-        binary+w //....uexp
-        binary+wS //..._BuildData.uasset        ##This is a comment`;
-    } else if (filename === "Delta_Transfer_Enabled.typemap") {
-      return `# Perforce File Type Mapping Specifications.
-#
-#  TypeMap:    a list of filetype mappings; one per line.
-#        Each line has two elements:
-#
-#          Filetype: The filetype to use on 'p4 add'.
-#
-#          Path:     File pattern which will use this filetype.
-#
-# See 'p4 help typemap' for more information.
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
 
-TypeMap:
-    text+l      //....md5anim     ## Unity3D files that should be locked
-    text+l      //....md5mesh     ## Unity3D files that should be locked
-    text+l      //....meta        ## Unity3D files that should be locked
+      const content = await response.text();
+      console.log(`Successfully loaded template via fetch from: ${url}`);
+      return content;
+    } catch (error) {
+      console.log(`Fetch failed for ${url}: ${error.message}`);
 
-    text+w      //....config      ## Auto-updated files - reconcile offline work carefully
-    text+w      //....DotSettings  ## Auto-updated files - reconcile offline work carefully
-    text+w      //....ini         ## Auto-updated files - reconcile offline work carefully
-    text+w      //....log         ## Auto-updated files - reconcile offline work carefully
-    text+w      //....modules     ## Auto-updated files - reconcile offline work carefully
-    text+w      //....pdm         ## Auto-updated files - reconcile offline work carefully
-    text+w      //....target      ## Auto-updated files - reconcile offline work carefully
-    text+w      //....uatbuildrecord ## Auto-updated files - reconcile offline work carefully
-    text+w      //....uproject    ## Auto-updated files - reconcile offline work carefully
-    text+w      //....version     ## Auto-updated files - reconcile offline work carefully
-
-    binary+Fl   //....avi         ## Already compressed - store uncompressed and lock
-    binary+Fl   //....bz2         ## Already compressed - store uncompressed and lock
-    binary+Fl   //....gif         ## Already compressed - store uncompressed and lock
-    binary+Fl   //....gz          ## Already compressed - store uncompressed and lock
-    binary+Fl   //....jar         ## Already compressed - store uncompressed and lock
-    binary+Fl   //....jpeg        ## Already compressed - store uncompressed and lock
-    binary+Fl   //....jpg         ## Already compressed - store uncompressed and lock
-    binary+Fl   //....mov         ## Already compressed - store uncompressed and lock
-    binary+Fl   //....mpg         ## Already compressed - store uncompressed and lock
-    binary+Fl   //....rar         ## Already compressed - store uncompressed and lock
-    binary+Fl   //....tif         ## Already compressed - store uncompressed and lock
-    binary+Fl   //....tiff        ## Already compressed - store uncompressed and lock
-    binary+Fl   //....zip         ## Already compressed - store uncompressed and lock
-
-    binary+Fl   //....a           ## Store uncompressed for Delta Transfer
-    binary+Fl   //....aac         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....aar         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....aas         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ae          ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ai          ## Store uncompressed for Delta Transfer
-    binary+Fl   //....aiff        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....anim        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....apk         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....asset       ## Store uncompressed for Delta Transfer
-    binary+Fl   //....bik         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....bin         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....blend       ## Store uncompressed for Delta Transfer
-    binary+Fl   //....bmp         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....bnk         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....btr         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....celtx       ## Store uncompressed for Delta Transfer
-    binary+Fl   //....cfm         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....class       ## Store uncompressed for Delta Transfer
-    binary+Fl   //....clip        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....controller  ## Store uncompressed for Delta Transfer
-    binary+Fl   //....cubemap     ## Store uncompressed for Delta Transfer
-    binary+Fl   //....dae         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....data        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....dds         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....demo        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....doc         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....docx        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....dot         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ear         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....fbx         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....flac        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....fnt         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ibl         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ico         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ip          ## Store uncompressed for Delta Transfer
-    binary+Fl   //....light       ## Store uncompressed for Delta Transfer
-    binary+Fl   //....lighting    ## Store uncompressed for Delta Transfer
-    binary+Fl   //....lwo         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....m4a         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ma          ## Store uncompressed for Delta Transfer
-    binary+Fl   //....mask        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....mat         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....mb          ## Store uncompressed for Delta Transfer
-    binary+Fl   //....mp3         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....mp4         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....navmesh     ## Store uncompressed for Delta Transfer
-    binary+Fl   //....obj         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....odg         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....odp         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ods         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....odt         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ogg         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....otf         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....otg         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ots         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ott         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....overrideController ## Store uncompressed for Delta Transfer
-    binary+Fl   //....pac         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....pdf         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....physicMaterial ## Store uncompressed for Delta Transfer
-    binary+Fl   //....png         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ppt         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....pptx        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....prefab      ## Store uncompressed for Delta Transfer
-    binary+Fl   //....prefab.unity ## Store uncompressed for Delta Transfer
-    binary+Fl   //....psb         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....psd         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....raw         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....renderTexture ## Store uncompressed for Delta Transfer
-    binary+Fl   //....res         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....response    ## Store uncompressed for Delta Transfer
-    binary+Fl   //....roq         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....rpt         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....shadow      ## Store uncompressed for Delta Transfer
-    binary+Fl   //....skp         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....so          ## Store uncompressed for Delta Transfer
-    binary+Fl   //....sxw         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....tar         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....terrain     ## Store uncompressed for Delta Transfer
-    binary+Fl   //....tga         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....tres        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....ttf         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....u           ## Store uncompressed for Delta Transfer
-    binary+Fl   //....uasset      ## Store uncompressed for Delta Transfer
-    binary+Fl   //....udk         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....umap        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....unity       ## Store uncompressed for Delta Transfer
-    binary+Fl   //....unitypackage ## Store uncompressed for Delta Transfer
-    binary+Fl   //....upk         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....war         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....wav         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....webm        ## Store uncompressed for Delta Transfer
-    binary+Fl   //....wma         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....wmv         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....xls         ## Store uncompressed for Delta Transfer
-    binary+Fl   //....xlsx        ## Store uncompressed for Delta Transfer
-
-    binary+Fw   //....app         ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....dll         ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....dylib       ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....exe         ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....exp         ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....ipa         ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....lib         ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....pdb         ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....rc          ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....stub        ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....ubulk       ## Build output - stays writable, Delta Transfer enabled
-    binary+Fw   //....uexp        ## Build output - stays writable, Delta Transfer enabled
-
-    binary+FwS2 //..._BuildData.uasset ## Large regenerable files - keep 2 versions, Delta Transfer enabled`;
+      // Fallback to XHR
+      try {
+        const content = await loadUrlWithXHR(url);
+        console.log(`Successfully loaded template via XHR from: ${url}`);
+        return content;
+      } catch (xhrError) {
+        console.log(`XHR also failed for ${url}: ${xhrError.message}`);
+        throw new Error(
+          `Unable to load template from ${url}: ${error.message}`
+        );
+      }
     }
-    throw error;
   }
+}
+
+// Helper function to load URLs using XMLHttpRequest (fallback method)
+function loadUrlWithXHR(url) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", url, true);
+    xhr.timeout = 10000; // 10 second timeout
+
+    xhr.onreadystatechange = function () {
+      if (xhr.readyState === 4) {
+        if (xhr.status === 200) {
+          resolve(xhr.responseText);
+        } else {
+          reject(
+            new Error(`XHR failed with status: ${xhr.status} ${xhr.statusText}`)
+          );
+        }
+      }
+    };
+
+    xhr.onerror = function () {
+      reject(new Error("XHR network error"));
+    };
+
+    xhr.ontimeout = function () {
+      reject(new Error("XHR request timed out"));
+    };
+
+    xhr.send();
+  });
 }
 
 function parseTemplateContent(content) {
