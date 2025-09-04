@@ -9,15 +9,15 @@ The project has been refactored and organized for better maintainability and reu
 ```
 src/
 ├── shared/
-│   └── p4-utilities.js          # Shared utilities for P4V tools
+│   ├── p4-utilities.js          # Shared utilities for P4V tools
+│   ├── style.css                # Light theme styles (shared)
+│   └── darkstyle.css            # Dark theme styles (shared)
 ├── config/
 │   └── template-config.js       # Template configuration (user-editable)
 ├── p4typemaptool/
 │   ├── p4typemaptool.html      # Main HTML interface
 │   ├── p4typemaptool.js        # Core application logic
 │   └── p4typemaptool.css       # Tool-specific styles
-├── darkstyle.css               # Dark theme styles
-├── style.css                   # Light theme styles
 └── README.md                   # This file
 ```
 
@@ -131,8 +131,8 @@ P4Utils.initializeTheme();
 
 ```
 p4typemaptool.html
-├── ../darkstyle.css (conditional)
-├── ../style.css (conditional)
+├── ../shared/darkstyle.css (conditional)
+├── ../shared/style.css (conditional)
 ├── p4typemaptool.css
 ├── ../shared/p4-utilities.js
 ├── ../config/template-config.js
