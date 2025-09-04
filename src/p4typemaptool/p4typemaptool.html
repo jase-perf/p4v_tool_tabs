@@ -106,6 +106,31 @@
       </div>
     </div>
 
+    <!-- Hidden template for template results modal -->
+    <div id="templateResultsModalTemplate" style="display: none">
+      <div class="editor-overlay" onclick="closeTemplateResultsModal()"></div>
+      <div class="template-results-modal">
+        <div class="modal-header">
+          <h3 id="templateResultsTitle">Template Loading Results</h3>
+          <button
+            onclick="closeTemplateResultsModal()"
+            class="btn close-btn"
+            title="Close"
+          >
+            ×
+          </button>
+        </div>
+        <div class="modal-content" id="templateResultsContent">
+          <!-- Content will be populated by JavaScript -->
+        </div>
+        <div class="modal-footer">
+          <button onclick="closeTemplateResultsModal()" class="btn primary">
+            OK
+          </button>
+        </div>
+      </div>
+    </div>
+
     <!-- Hidden template for file type editor -->
     <div id="fileTypeEditorTemplate" style="display: none">
       <div class="file-type-editor">

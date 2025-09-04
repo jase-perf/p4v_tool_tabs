@@ -1436,7 +1436,18 @@ function findExistingRule(pattern) {
 function showTemplateLoadResults(templateName, mergeResult) {
   const { added, skipped, conflicts } = mergeResult;
 
-  let message = `Template "${templateName}" loaded:\n\n`;
+  // Create the modal from template
+  const template = document.getElementById("templateResultsModalTemplate");
+  const modal = template.cloneNode(true);
+  modal.id = "templateResultsModal";
+  modal.style.display = "block";
+
+  // Set the title with proper HTML entity decoding
+  const title = modal.querySelector("#templateResultsTitle");
+  title.textContent = "Template Loading Results";
+
+  // Build the message content with proper HTML entity decoding
+  let message = `Template "${decodeHtmlEntities(templateName)}" loaded:\n\n`;
 
   if (added.length > 0) {
     message += `✅ Added ${added.length} new rules\n`;
@@ -1450,7 +1461,9 @@ function showTemplateLoadResults(templateName, mergeResult) {
     message += `⚠️ Added ${conflicts.length} conflicting rules (marked as conflicts)\n`;
     message += "\nConflicts:\n";
     conflicts.forEach((conflict) => {
-      message += `• ${conflict.pattern}: ${conflict.existingFiletype} → ${conflict.newFiletype}\n`;
+      message += `• ${decodeHtmlEntities(conflict.pattern)}: ${
+        conflict.existingFiletype
+      } → ${conflict.newFiletype}\n`;
     });
   }
 
@@ -1458,7 +1471,33 @@ function showTemplateLoadResults(templateName, mergeResult) {
     message += "\nNo new rules were added - all template rules already exist.";
   }
 
-  alert(message);
+  // Set the content with proper HTML entity decoding
+  const content = modal.querySelector("#templateResultsContent");
+  content.textContent = message;
+
+  // Add to document
+  document.body.appendChild(modal);
+
+  // Focus the modal for accessibility
+  modal.querySelector(".btn.primary").focus();
+}
+
+// Function to decode HTML entities
+function decodeHtmlEntities(text) {
+  if (!text) return text;
+
+  // Create a temporary element to decode HTML entities
+  const textarea = document.createElement("textarea");
+  textarea.innerHTML = text;
+  return textarea.value;
+}
+
+// Function to close the template results modal
+function closeTemplateResultsModal() {
+  const modal = document.getElementById("templateResultsModal");
+  if (modal) {
+    modal.remove();
+  }
 }
 
 // Close file type editor when clicking outside
@@ -1478,9 +1517,19 @@ document.addEventListener("click", function (e) {
   }
 });
 
-// Handle escape key to cancel editing
+// Handle escape key to cancel editing or close modals
 document.addEventListener("keydown", function (e) {
-  if (e.key === "Escape" && editingRow) {
-    cancelFileTypeEdit();
+  if (e.key === "Escape") {
+    // Close template results modal if open
+    const templateModal = document.getElementById("templateResultsModal");
+    if (templateModal) {
+      closeTemplateResultsModal();
+      return;
+    }
+
+    // Cancel file type editing if active
+    if (editingRow) {
+      cancelFileTypeEdit();
+    }
   }
 });

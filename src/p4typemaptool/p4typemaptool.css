@@ -516,3 +516,132 @@ body.dark-theme .template-status.error {
   color: #ffb3b3;
   border: 1px solid #6a2e2e;
 }
+
+/* Template results modal styling */
+.template-results-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 1000;
+  background: #f1f4f9;
+  border: 0.0625rem solid #6e6e6e;
+  color: #6e6e6e;
+  border-radius: 0.5rem;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.3);
+  max-width: 50rem;
+  width: 90%;
+  max-height: 80vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Dark theme override for template results modal */
+body.dark-theme .template-results-modal {
+  background: #363636;
+  color: #f1f4f9;
+  border: 0.0625rem solid #fefefe;
+}
+
+.template-results-modal .modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  border-bottom: 0.0625rem solid #ddd;
+  border-radius: 0.5rem 0.5rem 0 0;
+  background: rgba(0, 123, 204, 0.05);
+}
+
+body.dark-theme .template-results-modal .modal-header {
+  border-bottom: 0.0625rem solid #555;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.template-results-modal .modal-header h3 {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: bold;
+}
+
+.template-results-modal .close-btn {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  color: #666;
+  line-height: 1;
+  min-width: auto;
+  width: auto;
+}
+
+.template-results-modal .close-btn:hover {
+  background: rgba(0, 0, 0, 0.1);
+  color: #333;
+}
+
+body.dark-theme .template-results-modal .close-btn {
+  color: #ccc;
+}
+
+body.dark-theme .template-results-modal .close-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.template-results-modal .modal-content {
+  flex: 1;
+  padding: 1.5rem;
+  overflow-y: auto;
+  font-family: monospace;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.template-results-modal .modal-footer {
+  padding: 1rem 1.5rem;
+  border-top: 0.0625rem solid #ddd;
+  text-align: right;
+  border-radius: 0 0 0.5rem 0.5rem;
+  background: rgba(0, 123, 204, 0.02);
+}
+
+body.dark-theme .template-results-modal .modal-footer {
+  border-top: 0.0625rem solid #555;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Scrollbar styling for modal content */
+.template-results-modal .modal-content::-webkit-scrollbar {
+  width: 0.5rem;
+}
+
+.template-results-modal .modal-content::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 0.25rem;
+}
+
+.template-results-modal .modal-content::-webkit-scrollbar-thumb {
+  background: rgba(0, 123, 204, 0.3);
+  border-radius: 0.25rem;
+}
+
+.template-results-modal .modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 123, 204, 0.5);
+}
+
+body.dark-theme .template-results-modal .modal-content::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+body.dark-theme .template-results-modal .modal-content::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+body.dark-theme .template-results-modal .modal-content::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.5);
+}
