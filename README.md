@@ -4,7 +4,35 @@ A collection of custom Tabs for P4V and P4Admin to improve quality of life and e
 
 ## Tools
 
+- [P4 AI Help](#p4-ai-help)
 - [P4 Typemap Editor](#p4-typemap-tool)
+
+
+## P4 AI Help
+
+Get answers quickly and easily with the help of AI and Perforce documentation. Ask a question and get a response along with links to specific documentation or knowledge base articles so you can find what you need mor quickly.
+
+Additionally, you can continue the conversation with the AI help agent by asking clarifying questions.
+
+![The AI Help Tab open in P4V](aitab.png)
+
+### Installation
+
+1. Download the `aihelp.xml` file from the [Releases page](https://github.com/jase-perf/p4v_tool_tabs/releases/) (or directly from this repo)
+2. In P4 Admin, go to Tools > Manage Tools > HTML Tabs...
+![Selecting Tools, Manage Tools, HTML Tabs menu option](toolsmenu.png)
+3. In the Manage HTML Tabs window, select Import HTML Tabs...
+![Select Import HTML Tabs](importHTMLtabs.png)
+4. Select the `aihelp.xml` file that you download earlier and click Import.
+5. Hit OK and now you can access the new tab via the View menu!
+
+
+### Usage
+
+Simply type in the search box to start a conversation with an AI agent, who has access to the official documentation and knowledge base articles from help.perforce.com.
+
+By default, it will only use P4 documentation (including P4V and P4Admin) but you can customize which documentation will be included in the search by clicking on the **Product: Perforce P4** button to add and remove more documentation from the sources.
+
 
 
 ## P4 Typemap Tool
