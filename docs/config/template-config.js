@@ -29,13 +29,13 @@ const TemplateConfig = {
         name: "Game Development",
         description:
           "Optimized for game development projects with Unity, Unreal, and common game assets",
-        url: "https://gist.githubusercontent.com/jase-perf/3f6328fb66427802090f458775e481df/raw/p4%2520universal%2520game%2520dev%2520typemap",
+        url: "https://gist.githubusercontent.com/jase-perf/3f6328fb66427802090f458775e481df/raw/P4%2520Game%2520Engine%2520Typemap%2520Compressed",
       },
       {
         name: "Game Development with Delta Transfer",
         description:
           "Enables delta transfer for better network performance with large files (at the expense of using more storage space)",
-        url: "https://gist.githubusercontent.com/jase-perf/3bcfa1ac2219e695fd1b05abc0487b40/raw/Delta_Transfer_Enabled.typemap",
+        url: "https://gist.githubusercontent.com/jase-perf/3bcfa1ac2219e695fd1b05abc0487b40/raw/P4%2520Game%2520Engine%2520Typemap%2520-%2520Delta%2520Transfer%2520Enabled",
       },
       // Add your custom templates here:
       // {
