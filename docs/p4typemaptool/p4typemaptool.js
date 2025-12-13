@@ -5,6 +5,7 @@ let typemapRules = [];
 let currentSortBy = "order";
 let currentSortDirection = "asc";
 let editingRow = null;
+let originalRuleState = null;
 let hasUnsavedChanges = false;
 let availableTemplates = [];
 
@@ -281,52 +282,46 @@ function createTableRow(rule, displayIndex) {
   row.innerHTML = `
         <td class="priority-cell">
             <div class="execution-order-controls">
-                <button onclick="moveRuleUp('${
-                  rule.id
-                }')" class="btn order-button" title="Move Up" ${
-    isFirst ? "disabled" : ""
-  }>↑</button>
+                <button onclick="moveRuleUp('${rule.id
+    }')" class="btn order-button" title="Move Up" ${isFirst ? "disabled" : ""
+    }>↑</button>
                 <span>${rule.order}</span>
-                <button onclick="moveRuleDown('${
-                  rule.id
-                }')" class="btn order-button" title="Move Down" ${
-    isLast ? "disabled" : ""
-  }>↓</button>
+                <button onclick="moveRuleDown('${rule.id
+    }')" class="btn order-button" title="Move Down" ${isLast ? "disabled" : ""
+    }>↓</button>
             </div>
         </td>
         <td class="file-type-cell">
             <div class="file-type-display" onclick="editFileType('${rule.id}')">
                 <span class="type-label">${getFileTypeDescription(
-                  rule.filetype
-                )}</span>
+      rule.filetype
+    )}</span>
                 <code class="type-code">${rule.filetype}</code>
             </div>
-            ${
-              conflicts.length > 0
-                ? `<div class="conflict-warning">⚠️ ${conflicts.join(
-                    "; "
-                  )}</div>`
-                : ""
-            }
+            ${conflicts.length > 0
+      ? `<div class="conflict-warning">⚠️ ${conflicts.join(
+        "; "
+      )}</div>`
+      : ""
+    }
         </td>
         <td>
             <input type="text" class="pattern-input" value="${escapeHtml(
-              rule.pattern
-            )}" 
+      rule.pattern
+    )}" 
                    onchange="updateRulePattern('${rule.id}', this.value)" 
                    onblur="validatePattern('${rule.id}', this.value)">
         </td>
         <td>
             <input type="text" class="pattern-input" value="${escapeHtml(
-              rule.comment || ""
-            )}" 
+      rule.comment || ""
+    )}" 
                    onchange="updateRuleComment('${rule.id}', this.value)" 
                    placeholder="Optional comment">
         </td>
         <td class="actions-cell">
-            <button onclick="deleteRule('${
-              rule.id
-            }')" class="btn danger" title="Delete Rule">🗑️</button>
+            <button onclick="deleteRule('${rule.id
+    }')" class="btn danger" title="Delete Rule">🗑️</button>
         </td>
     `;
 
@@ -461,6 +456,7 @@ function addNewRule() {
     filetype: "binary",
     pattern: "//....",
     originalLine: "",
+    isNew: true,
   };
 
   typemapRules.push(newRule);
@@ -544,6 +540,9 @@ function editFileType(ruleId) {
 
   // Close any existing editor
   cancelFileTypeEdit();
+
+  // Capture existing state for potential revert
+  originalRuleState = { ...rule };
 
   // Find the cell and replace content with editor
   const row = document.querySelector(`[data-rule-id="${ruleId}"]`);
@@ -820,8 +819,11 @@ function applyFileTypeEdit() {
     if (newPattern) {
       rule.pattern = newPattern;
     }
+    delete rule.isNew;
     markAsChanged();
   }
+
+  originalRuleState = null;
 
   cancelFileTypeEdit();
   renderTable();
@@ -830,6 +832,29 @@ function applyFileTypeEdit() {
 // Cancel file type edit
 function cancelFileTypeEdit() {
   if (editingRow) {
+    // Check if we need to remove a new rule or revert an existing one
+    const ruleIndex = typemapRules.findIndex((r) => r.id === editingRow);
+    if (ruleIndex !== -1) {
+      const rule = typemapRules[ruleIndex];
+      // If it's a new rule that hasn't been saved, remove it
+      if (rule.isNew) {
+        typemapRules.splice(ruleIndex, 1);
+        reorderRules();
+        updateRuleCount();
+        renderTable();
+        editingRow = null;
+        originalRuleState = null;
+        return;
+      }
+      // If it's an existing rule, revert changes
+      else if (originalRuleState) {
+        rule.filetype = originalRuleState.filetype;
+        rule.pattern = originalRuleState.pattern;
+      }
+    }
+
+    originalRuleState = null;
+
     const editor = document.getElementById(`editor_${editingRow}`);
     if (editor) {
       editor.remove();
@@ -1461,9 +1486,8 @@ function showTemplateLoadResults(templateName, mergeResult) {
     message += `⚠️ Added ${conflicts.length} conflicting rules (marked as conflicts)\n`;
     message += "\nConflicts:\n";
     conflicts.forEach((conflict) => {
-      message += `• ${decodeHtmlEntities(conflict.pattern)}: ${
-        conflict.existingFiletype
-      } → ${conflict.newFiletype}\n`;
+      message += `• ${decodeHtmlEntities(conflict.pattern)}: ${conflict.existingFiletype
+        } → ${conflict.newFiletype}\n`;
     });
   }
 
