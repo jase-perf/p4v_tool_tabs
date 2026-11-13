@@ -1,5 +1,8 @@
 # P4V Tool Tabs
 
+> [!IMPORTANT]
+> **These tabs now live in the [Ultimate P4V Toolkit](https://jase.town/ultimate-p4v-toolkit/).** AI Help and the Typemap Editor are there with several new tabs, and you can import them all from one XML file. Go to that page for setup steps and the rest of the toolkit.
+
 A collection of custom Tabs for P4V and P4Admin to improve quality of life and ease of setup.
 
 ## Tools
